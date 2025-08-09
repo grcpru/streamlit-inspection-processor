@@ -101,7 +101,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def load_default_mapping():
-    """Load your complete 266 trade mappings"""
+    """Load your complete 266 trade mappings from the uploaded CSV"""
     mapping_data = [
         {"Room": "Apartment Entry Door", "Component": "Door Handle", "Trade": "Doors"},
         {"Room": "Apartment Entry Door", "Component": "Door Locks and Keys", "Trade": "Doors"},
@@ -304,10 +304,106 @@ def load_default_mapping():
         {"Room": "Downstairs Toilet (if applicable)", "Component": "Light Fixtures", "Trade": "Electrical"},
         {"Room": "Downstairs Toilet (if applicable)", "Component": "Sink", "Trade": "Plumbing"},
         {"Room": "Downstairs Toilet (if applicable)", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Downstairs Toilet (
+        {"Room": "Downstairs Toilet (if applicable)", "Component": "Tiles", "Trade": "Flooring - Tiles"},
+        {"Room": "Downstairs Toilet (if applicable)", "Component": "Toilet", "Trade": "Plumbing"},
+        {"Room": "Downstairs Toilet (if applicable)", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Family Room", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Family Room", "Component": "Flooring", "Trade": "Flooring - Timber"},
+        {"Room": "Family Room", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Family Room", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Family Room", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Family Room", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Family Room", "Component": "Windows (if applicable)", "Trade": "Windows"},
+        {"Room": "Garage", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Garage", "Component": "Door", "Trade": "Doors"},
+        {"Room": "Garage", "Component": "Electrical", "Trade": "Electrical"},
+        {"Room": "Garage", "Component": "Flooring", "Trade": "Flooring - Timber"},
+        {"Room": "Garage", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Guest Bedroom", "Component": "Carpets", "Trade": "Flooring - Carpets"},
+        {"Room": "Guest Bedroom", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Guest Bedroom", "Component": "Doors", "Trade": "Doors"},
+        {"Room": "Guest Bedroom", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Guest Bedroom", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Guest Bedroom", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Guest Bedroom", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Guest Bedroom", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
+        {"Room": "Guest Bedroom", "Component": "Windows", "Trade": "Windows"},
+        {"Room": "Kitchen", "Component": "Appliances", "Trade": "Appliances"},
+        {"Room": "Kitchen", "Component": "Benchtop", "Trade": "Carpentry & Joinery"},
+        {"Room": "Kitchen", "Component": "Cabinets", "Trade": "Carpentry & Joinery"},
+        {"Room": "Kitchen", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Kitchen", "Component": "Dishwasher", "Trade": "Appliances"},
+        {"Room": "Kitchen", "Component": "Flooring", "Trade": "Flooring - Timber"},
+        {"Room": "Kitchen", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Kitchen", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Kitchen", "Component": "Oven", "Trade": "Appliances"},
+        {"Room": "Kitchen", "Component": "Rangehood", "Trade": "Appliances"},
+        {"Room": "Kitchen", "Component": "Sink", "Trade": "Plumbing"},
+        {"Room": "Kitchen", "Component": "Splashback", "Trade": "Flooring - Tiles"},
+        {"Room": "Kitchen", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Kitchen", "Component": "Windows (if applicable)", "Trade": "Windows"},
+        {"Room": "Laundry", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Laundry", "Component": "Cold/Hot Water Outlets", "Trade": "Plumbing"},
+        {"Room": "Laundry", "Component": "Doors", "Trade": "Doors"},
+        {"Room": "Laundry", "Component": "Drainage", "Trade": "Plumbing"},
+        {"Room": "Laundry", "Component": "Exhaust Fan", "Trade": "Electrical"},
+        {"Room": "Laundry", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Laundry", "Component": "Laundry Sink", "Trade": "Plumbing"},
+        {"Room": "Laundry", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Laundry", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Laundry", "Component": "Tiles", "Trade": "Flooring - Tiles"},
+        {"Room": "Laundry", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Living Room", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Living Room", "Component": "Flooring", "Trade": "Flooring - Timber"},
+        {"Room": "Living Room", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Living Room", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Living Room", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Living Room", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Living Room", "Component": "Windows", "Trade": "Windows"},
+        {"Room": "Master Bedroom", "Component": "Carpets", "Trade": "Flooring - Carpets"},
+        {"Room": "Master Bedroom", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Master Bedroom", "Component": "Doors", "Trade": "Doors"},
+        {"Room": "Master Bedroom", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Master Bedroom", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Master Bedroom", "Component": "Network Router (if applicable)", "Trade": "Electrical"},
+        {"Room": "Master Bedroom", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Master Bedroom", "Component": "Sliding Glass Door (if applicable)", "Trade": "Windows"},
+        {"Room": "Master Bedroom", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Master Bedroom", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
+        {"Room": "Master Bedroom", "Component": "Windows", "Trade": "Windows"},
+        {"Room": "Study", "Component": "Carpets", "Trade": "Flooring - Carpets"},
+        {"Room": "Study", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Study", "Component": "Doors", "Trade": "Doors"},
+        {"Room": "Study", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Study", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Study", "Component": "Network Router (if applicable)", "Trade": "Electrical"},
+        {"Room": "Study", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Study", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Study", "Component": "Windows", "Trade": "Windows"},
+        {"Room": "Upstairs Bathroom", "Component": "Bathtub (if applicable)", "Trade": "Plumbing"},
+        {"Room": "Upstairs Bathroom", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Upstairs Bathroom", "Component": "Doors", "Trade": "Doors"},
+        {"Room": "Upstairs Bathroom", "Component": "Exhaust Fan", "Trade": "Electrical"},
+        {"Room": "Upstairs Bathroom", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Upstairs Bathroom", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Upstairs Bathroom", "Component": "Mirror", "Trade": "Carpentry & Joinery"},
+        {"Room": "Upstairs Bathroom", "Component": "Shower", "Trade": "Plumbing"},
+        {"Room": "Upstairs Bathroom", "Component": "Sink", "Trade": "Plumbing"},
+        {"Room": "Upstairs Bathroom", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Upstairs Bathroom", "Component": "Tiles", "Trade": "Flooring - Tiles"},
+        {"Room": "Upstairs Bathroom", "Component": "Toilet", "Trade": "Plumbing"},
+        {"Room": "Upstairs Bathroom", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Upstairs Landing", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Upstairs Landing", "Component": "Flooring", "Trade": "Flooring - Timber"},
+        {"Room": "Upstairs Landing", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Upstairs Landing", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Upstairs Landing", "Component": "Walls", "Trade": "Painting"}
+    ]
+    
+    return pd.DataFrame(mapping_data)
 
 def get_available_trades():
-    """Get list of available trade categories"""
+    """Get list of available trade categories from the mapping"""
     return [
         "Doors",
         "Electrical", 
@@ -318,20 +414,7 @@ def get_available_trades():
         "Flooring - Carpets", 
         "Flooring - Timber",
         "Windows",
-        "Appliances",
-        "HVAC",
-        "Security Systems",
-        "Communications",
-        "Fire Safety",
-        "Waterproofing",
-        "Glazing",
-        "Stone & Tiling",
-        "External Cladding",
-        "Roofing",
-        "Structural",
-        "Concreting",
-        "Landscaping",
-        "Fencing"
+        "Appliances"
     ]
 
 def process_inspection_data(df, trade_mapping):
@@ -431,7 +514,7 @@ def process_inspection_data(df, trade_mapping):
     return final_df, df
 
 def calculate_comprehensive_metrics(final_df, df):
-    """Calculate comprehensive inspection metrics"""
+    """Calculate comprehensive inspection metrics including trade-specific analysis"""
     
     defects_only = final_df[final_df["StatusClass"] == "Not OK"]
     
@@ -495,6 +578,9 @@ def calculate_comprehensive_metrics(final_df, df):
     summary_unit_trade = defects_only.groupby(["Unit", "Trade"]).size().reset_index(name="DefectCount")
     summary_room_comp = defects_only.groupby(["Room", "Component"]).size().reset_index(name="DefectCount").sort_values("DefectCount", ascending=False)
     
+    # NEW: Generate Trade Specific Summary with detailed analysis
+    trade_specific_summary = generate_trade_specific_summary(final_df, defects_only, total_units)
+    
     return {
         "building_name": building_name,
         "inspection_date": inspection_date,
@@ -518,11 +604,72 @@ def calculate_comprehensive_metrics(final_df, df):
         "summary_room": summary_room,
         "summary_unit_trade": summary_unit_trade,
         "summary_room_comp": summary_room_comp,
-        "defects_only": defects_only
+        "defects_only": defects_only,
+        "trade_specific_summary": trade_specific_summary  # NEW
     }
 
+def generate_trade_specific_summary(final_df, defects_only, total_units):
+    """Generate comprehensive trade-specific analysis"""
+    
+    # Get all trades in the system
+    all_trades = final_df['Trade'].unique()
+    trade_summary = []
+    
+    for trade in all_trades:
+        # Basic defect metrics
+        trade_defects = defects_only[defects_only['Trade'] == trade]
+        total_defects = len(trade_defects)
+        
+        # Total inspections for this trade
+        total_inspections = len(final_df[final_df['Trade'] == trade])
+        defect_rate = (total_defects / total_inspections * 100) if total_inspections > 0 else 0
+        
+        # Units affected
+        units_affected = trade_defects['Unit'].nunique()
+        percentage_units_affected = (units_affected / total_units * 100) if total_units > 0 else 0
+        
+        # Most common defect components for this trade
+        top_components = trade_defects['Component'].value_counts().head(3)
+        top_components_str = ", ".join([f"{comp} ({count})" for comp, count in top_components.items()])
+        
+        # Most affected rooms for this trade
+        top_rooms = trade_defects['Room'].value_counts().head(3)
+        top_rooms_str = ", ".join([f"{room} ({count})" for room, count in top_rooms.items()])
+        
+        # Priority level based on defect count and percentage
+        if total_defects >= 20 or percentage_units_affected >= 30:
+            priority = "High"
+        elif total_defects >= 10 or percentage_units_affected >= 15:
+            priority = "Medium"
+        elif total_defects > 0:
+            priority = "Low"
+        else:
+            priority = "None"
+        
+        # Average defects per affected unit
+        avg_defects_per_affected_unit = (total_defects / units_affected) if units_affected > 0 else 0
+        
+        trade_summary.append({
+            'Trade': trade,
+            'Total_Defects': total_defects,
+            'Total_Inspections': total_inspections,
+            'Defect_Rate_Percent': round(defect_rate, 2),
+            'Units_Affected': units_affected,
+            'Percentage_Units_Affected': round(percentage_units_affected, 2),
+            'Avg_Defects_Per_Affected_Unit': round(avg_defects_per_affected_unit, 2),
+            'Priority_Level': priority,
+            'Top_Components': top_components_str if top_components_str else "None",
+            'Top_Rooms': top_rooms_str if top_rooms_str else "None"
+        })
+    
+    # Convert to DataFrame and sort by total defects
+    trade_summary_df = pd.DataFrame(trade_summary)
+    trade_summary_df = trade_summary_df.sort_values('Total_Defects', ascending=False)
+    
+    return trade_summary_df
+
 def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_breakdown, executive_summary):
-    """Generate the enhanced Excel report with beautiful formatting"""
+    """Generate the enhanced Excel report with beautiful formatting and Trade Specific Summary"""
     
     excel_buffer = BytesIO()
     
@@ -548,6 +695,11 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
         problem_trades_header = workbook.add_format({
             'bold': True, 'font_size': 14, 'bg_color': '#7B1FA2', 'font_color': 'white',
             'align': 'center', 'valign': 'vcenter', 'border': 2, 'border_color': '#4A148C'
+        })
+        
+        trade_specific_header = workbook.add_format({
+            'bold': True, 'font_size': 14, 'bg_color': '#D32F2F', 'font_color': 'white',
+            'align': 'center', 'valign': 'vcenter', 'border': 2, 'border_color': '#B71C1C'
         })
         
         label_format = workbook.add_format({
@@ -695,6 +847,48 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
             for col_num, value in enumerate(metrics['defects_only'].columns.values):
                 ws_defects.write(0, col_num, value, header_format)
         
+        # NEW: Trade Specific Summary Sheet - This was missing!
+        if len(metrics['trade_specific_summary']) > 0:
+            metrics['trade_specific_summary'].to_excel(writer, sheet_name="🔧 Trade Specific Summary", index=False)
+            ws_trade_summary = writer.sheets["🔧 Trade Specific Summary"]
+            
+            # Apply beautiful formatting to Trade Specific Summary
+            for col_num, value in enumerate(metrics['trade_specific_summary'].columns.values):
+                ws_trade_summary.write(0, col_num, value, header_format)
+            
+            # Set column widths for better readability
+            ws_trade_summary.set_column('A:A', 18)  # Trade
+            ws_trade_summary.set_column('B:B', 12)  # Total_Defects
+            ws_trade_summary.set_column('C:C', 15)  # Total_Inspections
+            ws_trade_summary.set_column('D:D', 15)  # Defect_Rate_Percent
+            ws_trade_summary.set_column('E:E', 12)  # Units_Affected
+            ws_trade_summary.set_column('F:F', 20)  # Percentage_Units_Affected
+            ws_trade_summary.set_column('G:G', 25)  # Avg_Defects_Per_Affected_Unit
+            ws_trade_summary.set_column('H:H', 12)  # Priority_Level
+            ws_trade_summary.set_column('I:I', 30)  # Top_Components
+            ws_trade_summary.set_column('J:J', 25)  # Top_Rooms
+            
+            # Add conditional formatting for priority levels
+            high_priority_format = workbook.add_format({
+                'bg_color': '#FFCDD2', 'font_color': '#B71C1C', 'bold': True
+            })
+            medium_priority_format = workbook.add_format({
+                'bg_color': '#FFF3E0', 'font_color': '#E65100'
+            })
+            low_priority_format = workbook.add_format({
+                'bg_color': '#E8F5E8', 'font_color': '#2E7D32'
+            })
+            
+            # Apply conditional formatting to priority column
+            for row_num in range(1, len(metrics['trade_specific_summary']) + 1):
+                priority_value = metrics['trade_specific_summary'].iloc[row_num - 1]['Priority_Level']
+                if priority_value == 'High':
+                    ws_trade_summary.write(row_num, 7, priority_value, high_priority_format)
+                elif priority_value == 'Medium':
+                    ws_trade_summary.write(row_num, 7, priority_value, medium_priority_format)
+                elif priority_value == 'Low':
+                    ws_trade_summary.write(row_num, 7, priority_value, low_priority_format)
+        
         # Summary sheets if detailed breakdown is requested
         if detailed_breakdown:
             summary_sheets = [
@@ -818,9 +1012,46 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
         </div>
         """, unsafe_allow_html=True)
     
-    # Top problem trades
+    # NEW: Trade Specific Analysis Preview
+    if len(metrics['trade_specific_summary']) > 0:
+        st.markdown("### 🔧 Trade Specific Analysis")
+        
+        # Show top 5 problematic trades with enhanced display
+        top_trades_detailed = metrics['trade_specific_summary'].head(5)
+        
+        for i, (_, row) in enumerate(top_trades_detailed.iterrows(), 1):
+            trade_name = row['Trade']
+            defect_count = row['Total_Defects']
+            defect_rate = row['Defect_Rate_Percent']
+            units_affected = row['Units_Affected']
+            priority = row['Priority_Level']
+            
+            # Color coding based on priority
+            if priority == 'High':
+                border_color = "#D32F2F"
+                bg_color = "#FFEBEE"
+            elif priority == 'Medium':
+                border_color = "#F57C00"
+                bg_color = "#FFF3E0"
+            else:
+                border_color = "#388E3C"
+                bg_color = "#E8F5E8"
+            
+            st.markdown(f"""
+            <div class="trade-item" style="border-left-color: {border_color}; background: {bg_color};">
+                <strong>{i}. {trade_name}</strong> 
+                <span style="color: {border_color}; font-weight: bold;">({priority} Priority)</span>
+                <br>
+                <small>
+                    📊 {defect_count} defects ({defect_rate:.1f}% rate) • 
+                    🏠 {units_affected} units affected
+                </small>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Top problem trades (existing)
     if len(metrics['summary_trade']) > 0:
-        st.markdown("### ⚠️ Top Problem Trades")
+        st.markdown("### ⚠️ Top Problem Trades (Quick View)")
         
         for i, (_, row) in enumerate(metrics['summary_trade'].head(5).iterrows(), 1):
             trade_name = row['Trade'] if pd.notna(row['Trade']) else 'Unknown Trade'
@@ -878,19 +1109,20 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
     with col2:
         st.metric("📄 File Size", f"{len(excel_buffer.getvalue()) / 1024:.1f} KB")
     
-    # Report contents summary
+    # Report contents summary - UPDATED to include Trade Specific Summary
     st.markdown("#### 📋 What's in Your Report:")
     st.markdown("""
     - **📊 Executive Dashboard** - Key metrics and visual summary
     - **📋 All Inspections** - Complete detailed data
     - **🔍 Defects Only** - Filtered view of issues found
+    - **🔧 Trade Specific Summary** - Comprehensive trade analysis with priorities (NEW!)
     - **📊 By Trade** - Defects grouped by trade category
     - **🏠 By Unit** - Unit-specific defect summaries
     - **🚪 By Room** - Room-specific analysis
     - **🔧 Multiple Views** - Various data perspectives for analysis
     """)
     
-    st.success("🎉 Your professional inspection report is ready! The Excel file contains multiple worksheets with comprehensive analysis and beautiful formatting.")
+    st.success("🎉 Your professional inspection report is ready! The Excel file contains multiple worksheets with comprehensive analysis, including the new Trade Specific Summary sheet with detailed trade analysis and priorities.")
 
 def process_inspection_file(uploaded_file, trade_mapping, include_charts, detailed_breakdown, executive_summary, notification_email):
     """Process the inspection file using the current trade mapping"""
@@ -916,15 +1148,15 @@ def process_inspection_file(uploaded_file, trade_mapping, include_charts, detail
         
         progress_bar.progress(60)
         
-        # Step 3: Calculate metrics
-        status_text.text("📊 Calculating metrics and generating insights...")
+        # Step 3: Calculate metrics (including new trade-specific analysis)
+        status_text.text("📊 Calculating metrics and generating trade-specific insights...")
         
         metrics = calculate_comprehensive_metrics(final_df, processed_df)
         
         progress_bar.progress(80)
         
-        # Step 4: Generate Excel report
-        status_text.text("📈 Generating beautiful Excel report...")
+        # Step 4: Generate Excel report (now includes Trade Specific Summary)
+        status_text.text("📈 Generating beautiful Excel report with Trade Specific Summary...")
         
         excel_buffer = generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_breakdown, executive_summary)
         
@@ -965,16 +1197,16 @@ with tab2:
         st.markdown("### 📋 Mapping Source")
         mapping_source = st.radio(
             "Choose your mapping source:",
-            ["Load default mapping", "Upload custom mapping file", "Start with empty mapping"],
+            ["Load default mapping (266 mappings)", "Upload custom mapping file", "Start with empty mapping"],
             help="Choose how to initialize your trade mapping"
         )
     
     with col2:
         st.markdown("### 🔧 Actions")
-        if st.button("🔄 Reset Mapping", help="Reset to default mapping"):
+        if st.button("🔄 Reset Mapping", help="Reset to default 266 mappings"):
             st.session_state.trade_mapping = load_default_mapping()
             st.session_state.mapping_edited = True
-            st.success("✅ Mapping reset to default")
+            st.success("✅ Mapping reset to default (266 mappings)")
         
         if st.button("📥 Download Current Mapping", help="Download mapping as CSV"):
             if st.session_state.trade_mapping is not None:
@@ -1005,7 +1237,7 @@ with tab2:
             except Exception as e:
                 st.error(f"❌ Error reading file: {str(e)}")
     
-    elif mapping_source == "Load default mapping":
+    elif mapping_source == "Load default mapping (266 mappings)":
         if st.session_state.trade_mapping is None:
             st.session_state.trade_mapping = load_default_mapping()
             st.session_state.mapping_edited = True
@@ -1178,9 +1410,9 @@ with tab3:
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; font-size: 0.9em; padding: 2rem;">
-    <h4>🏢 Inspection Report Processor with Interactive Mapping</h4>
-    <p>Professional inspection report processing with customizable trade mapping</p>
-    <p>✅ Interactive mapping editor | ✅ Real-time preview | ✅ Professional reports</p>
+    <h4>🏢 Inspection Report Processor with Trade Specific Analysis</h4>
+    <p>Professional inspection report processing with comprehensive trade analysis and 266 mappings</p>
+    <p>✅ Trade Specific Summary | ✅ Priority Analysis | ✅ 266 Mappings | ✅ Professional Reports</p>
     <p>📊 Beautiful Excel reports | 🔄 Fast processing | 📱 Mobile friendly</p>
 </div>
 """, unsafe_allow_html=True)
