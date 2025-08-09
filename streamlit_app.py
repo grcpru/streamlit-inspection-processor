@@ -100,275 +100,67 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-def load_default_mapping():
-    """Load your complete 266 trade mappings from the uploaded CSV"""
-    mapping_data = [
-        {"Room": "Apartment Entry Door", "Component": "Door Handle", "Trade": "Doors"},
-        {"Room": "Apartment Entry Door", "Component": "Door Locks and Keys", "Trade": "Doors"},
-        {"Room": "Apartment Entry Door", "Component": "Paint", "Trade": "Painting"},
-        {"Room": "Apartment Entry Door", "Component": "Self Latching", "Trade": "Doors"},
-        {"Room": "Apartment SOU Door", "Component": "Fire Compliance Tag", "Trade": "Doors"},
-        {"Room": "Balcony", "Component": "Balustrade", "Trade": "Carpentry & Joinery"},
-        {"Room": "Balcony", "Component": "Drainage Point", "Trade": "Plumbing"},
-        {"Room": "Balcony", "Component": "GPO (if applicable)", "Trade": "Electrical"},
-        {"Room": "Balcony", "Component": "Glass", "Trade": "Windows"},
-        {"Room": "Balcony", "Component": "Glass Sliding Door", "Trade": "Windows"},
-        {"Room": "Balcony", "Component": "Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Bathroom", "Component": "Bathtub (if applicable)", "Trade": "Plumbing"},
-        {"Room": "Bathroom", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Bathroom", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Bathroom", "Component": "Exhaust Fan", "Trade": "Electrical"},
-        {"Room": "Bathroom", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Bathroom", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bathroom", "Component": "Mirror", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bathroom", "Component": "Shower", "Trade": "Plumbing"},
-        {"Room": "Bathroom", "Component": "Sink", "Trade": "Plumbing"},
-        {"Room": "Bathroom", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bathroom", "Component": "Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Bathroom", "Component": "Toilet", "Trade": "Plumbing"},
-        {"Room": "Bathroom", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Ceiling", "Trade": "Painting"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Doors", "Trade": "Doors"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Exhaust Fan", "Trade": "Electrical"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_GPO", "Trade": "Electrical"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Mirror", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Shower", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Sink", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Toilet", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Bathroom_Walls", "Trade": "Painting"},
-        {"Room": "Bathroom / Laundry", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Bathroom / Laundry", "Component": "Cold/Hot Water Outlets", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Bathroom / Laundry", "Component": "Drainage", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Exhaust Fan", "Trade": "Electrical"},
-        {"Room": "Bathroom / Laundry", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Section_Cold/Hot Water Outlets", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Section_Doors", "Trade": "Doors"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Section_Drainage", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Section_Exhaust Fan", "Trade": "Electrical"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Section_GPO", "Trade": "Electrical"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Section_Laundry Sink", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Section_Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Section_Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Section_Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Section_Walls", "Trade": "Painting"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Sink (if applicable)", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bathroom / Laundry", "Component": "Mirror", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bathroom / Laundry", "Component": "Shower", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Sink", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bathroom / Laundry", "Component": "Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Bathroom / Laundry", "Component": "Toilet", "Trade": "Plumbing"},
-        {"Room": "Bathroom / Laundry", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Bathroom / Laundry", "Component": "Laundry Sink", "Trade": "Plumbing"},
-        {"Room": "Bedroom", "Component": "Carpets", "Trade": "Flooring - Carpets"},
-        {"Room": "Bedroom", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Bedroom", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Bedroom", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Bedroom", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bedroom", "Component": "Network Router", "Trade": "Electrical"},
-        {"Room": "Bedroom", "Component": "Network Router (if applicable)", "Trade": "Electrical"},
-        {"Room": "Bedroom", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom", "Component": "Sliding Glass Door (if applicable)", "Trade": "Windows"},
-        {"Room": "Bedroom", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Bedroom", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom", "Component": "Windows", "Trade": "Windows"},
-        {"Room": "Bedroom 1", "Component": "Carpets", "Trade": "Flooring - Carpets"},
-        {"Room": "Bedroom 1", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Bedroom 1", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Bedroom 1", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Bedroom 1", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bedroom 1", "Component": "Network Router (if applicable)", "Trade": "Electrical"},
-        {"Room": "Bedroom 1", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 1", "Component": "Walls", "Trade": "Doors"},
-        {"Room": "Bedroom 1", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 1", "Component": "Windows", "Trade": "Windows"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Bathtub (if applicable)", "Trade": "Plumbing"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Carpets", "Trade": "Flooring - Carpets"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Exhaust Fan", "Trade": "Electrical"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Mirror", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Network Router (if applicable)", "Trade": "Electrical"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Shower", "Trade": "Plumbing"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Sink", "Trade": "Plumbing"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Toilet", "Trade": "Plumbing"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 1 w/Ensuite", "Component": "Windows", "Trade": "Windows"},
-        {"Room": "Bedroom 2", "Component": "Carpets", "Trade": "Flooring - Carpets"},
-        {"Room": "Bedroom 2", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Bedroom 2", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Bedroom 2", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Bedroom 2", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bedroom 2", "Component": "Network Router (if applicable)", "Trade": "Electrical"},
-        {"Room": "Bedroom 2", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 2", "Component": "Sliding Glass Door (if applicable)", "Trade": "Windows"},
-        {"Room": "Bedroom 2", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Bedroom 2", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 2", "Component": "Windows", "Trade": "Windows"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Bathtub (if applicable)", "Trade": "Plumbing"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Carpets", "Trade": "Flooring - Carpets"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Exhaust Fan", "Trade": "Electrical"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Mirror", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Network Router (if applicable)", "Trade": "Electrical"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Shower", "Trade": "Plumbing"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Sink", "Trade": "Plumbing"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Toilet", "Trade": "Plumbing"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 2 w/Ensuite", "Component": "Windows", "Trade": "Windows"},
-        {"Room": "Bedroom 3", "Component": "Carpets", "Trade": "Flooring - Carpets"},
-        {"Room": "Bedroom 3", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Bedroom 3", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Bedroom 3", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Bedroom 3", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bedroom 3", "Component": "Network Router (if applicable)", "Trade": "Electrical"},
-        {"Room": "Bedroom 3", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 3", "Component": "Sliding Glass Door (if applicable)", "Trade": "Windows"},
-        {"Room": "Bedroom 3", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Bedroom 3", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom 3", "Component": "Windows", "Trade": "Windows"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Bathtub (if applicable)", "Trade": "Plumbing"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Carpets", "Trade": "Flooring - Carpets"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Exhaust Fan", "Trade": "Electrical"},
-        {"Room": "Bedroom w/Ensuite", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Mirror", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Network Router (if applicable)", "Trade": "Electrical"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Shower", "Trade": "Plumbing"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Sink", "Trade": "Plumbing"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Sliding Glass Door (if applicable)", "Trade": "Windows"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Toilet", "Trade": "Plumbing"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
-        {"Room": "Bedroom w/Ensuite", "Component": "Windows", "Trade": "Windows"},
-        {"Room": "Butler's Pantry", "Component": "Cabinets/Shelving", "Trade": "Carpentry & Joinery"},
-        {"Room": "Butler's Pantry", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Butler's Pantry", "Component": "Flooring", "Trade": "Flooring - Timber"},
-        {"Room": "Butler's Pantry", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Butler's Pantry", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Butler's Pantry", "Component": "Sink", "Trade": "Plumbing"},
-        {"Room": "Butler's Pantry (if applicable)", "Component": "Cabinets/Shelving", "Trade": "Carpentry & Joinery"},
-        {"Room": "Butler's Pantry (if applicable)", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Butler's Pantry (if applicable)", "Component": "Flooring", "Trade": "Flooring - Timber"},
-        {"Room": "Butler's Pantry (if applicable)", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Butler's Pantry (if applicable)", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Butler's Pantry (if applicable)", "Component": "Sink", "Trade": "Plumbing"},
-        {"Room": "Corridor", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Corridor", "Component": "Flooring", "Trade": "Flooring - Timber"},
-        {"Room": "Corridor", "Component": "Intercom", "Trade": "Electrical"},
-        {"Room": "Corridor", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Corridor", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Corridor", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Dining & Living Room Area", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Dining & Living Room Area", "Component": "Flooring", "Trade": "Flooring - Timber"},
-        {"Room": "Dining & Living Room Area", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Dining & Living Room Area", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Dining & Living Room Area", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Dining & Living Room Area", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Dining & Living Room Area", "Component": "Windows (if applicable)", "Trade": "Windows"},
-        {"Room": "Downstairs Bathroom", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Downstairs Bathroom", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Downstairs Bathroom", "Component": "Exhaust Fan", "Trade": "Electrical"},
-        {"Room": "Downstairs Bathroom", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Downstairs Bathroom", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Downstairs Bathroom", "Component": "Mirror", "Trade": "Carpentry & Joinery"},
-        {"Room": "Downstairs Bathroom", "Component": "Shower", "Trade": "Plumbing"},
-        {"Room": "Downstairs Bathroom", "Component": "Sink", "Trade": "Plumbing"},
-        {"Room": "Downstairs Bathroom", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Downstairs Bathroom", "Component": "Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Downstairs Bathroom", "Component": "Toilet", "Trade": "Plumbing"},
-        {"Room": "Downstairs Bathroom", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Downstairs Toilet (if applicable)", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Downstairs Toilet (if applicable)", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Downstairs Toilet (if applicable)", "Component": "Exhaust Fan", "Trade": "Electrical"},
-        {"Room": "Downstairs Toilet (if applicable)", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Downstairs Toilet (if applicable)", "Component": "Sink", "Trade": "Plumbing"},
-        {"Room": "Downstairs Toilet (if applicable)", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Downstairs Toilet (if applicable)", "Component": "Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Downstairs Toilet (if applicable)", "Component": "Toilet", "Trade": "Plumbing"},
-        {"Room": "Downstairs Toilet (if applicable)", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Family Room", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Family Room", "Component": "Flooring", "Trade": "Flooring - Timber"},
-        {"Room": "Family Room", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Family Room", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Family Room", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Family Room", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Family Room", "Component": "Windows (if applicable)", "Trade": "Windows"},
-        {"Room": "Garage", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Garage", "Component": "Door", "Trade": "Doors"},
-        {"Room": "Garage", "Component": "Electrical", "Trade": "Electrical"},
-        {"Room": "Garage", "Component": "Flooring", "Trade": "Flooring - Timber"},
-        {"Room": "Garage", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Guest Bedroom", "Component": "Carpets", "Trade": "Flooring - Carpets"},
-        {"Room": "Guest Bedroom", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Guest Bedroom", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Guest Bedroom", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Guest Bedroom", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Guest Bedroom", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Guest Bedroom", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Guest Bedroom", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
-        {"Room": "Guest Bedroom", "Component": "Windows", "Trade": "Windows"},
-        {"Room": "Kitchen", "Component": "Appliances", "Trade": "Appliances"},
-        {"Room": "Kitchen", "Component": "Benchtop", "Trade": "Carpentry & Joinery"},
-        {"Room": "Kitchen", "Component": "Cabinets", "Trade": "Carpentry & Joinery"},
-        {"Room": "Kitchen", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Kitchen", "Component": "Dishwasher", "Trade": "Appliances"},
-        {"Room": "Kitchen", "Component": "Flooring", "Trade": "Flooring - Timber"},
-        {"Room": "Kitchen", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Kitchen", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Kitchen", "Component": "Oven", "Trade": "Appliances"},
-        {"Room": "Kitchen", "Component": "Rangehood", "Trade": "Appliances"},
-        {"Room": "Kitchen", "Component": "Sink", "Trade": "Plumbing"},
-        {"Room": "Kitchen", "Component": "Splashback", "Trade": "Flooring - Tiles"},
-        {"Room": "Kitchen", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Kitchen", "Component": "Windows (if applicable)", "Trade": "Windows"},
-        {"Room": "Laundry", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Laundry", "Component": "Cold/Hot Water Outlets", "Trade": "Plumbing"},
-        {"Room": "Laundry", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Laundry", "Component": "Drainage", "Trade": "Plumbing"},
-        {"Room": "Laundry", "Component": "Exhaust Fan", "Trade": "Electrical"},
-        {"Room": "Laundry", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Laundry", "Component": "Laundry Sink", "Trade": "Plumbing"},
-        {"Room": "Laundry", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Laundry", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Laundry", "Component": "Tiles", "Trade": "Flooring - Tiles"},
-        {"Room": "Laundry", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Living Room", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Living Room", "Component": "Flooring", "Trade": "Flooring - Timber"},
-        {"Room": "Living Room", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Living Room", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Living Room", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
-        {"Room": "Living Room", "Component": "Walls", "Trade": "Painting"},
-        {"Room": "Living Room", "Component": "Windows", "Trade": "Windows"},
-        {"Room": "Master Bedroom", "Component": "Carpets", "Trade": "Flooring - Carpets"},
-        {"Room": "Master Bedroom", "Component": "Ceiling", "Trade": "Painting"},
-        {"Room": "Master Bedroom", "Component": "Doors", "Trade": "Doors"},
-        {"Room": "Master Bedroom", "Component": "GPO", "Trade": "Electrical"},
-        {"Room": "Master Bedroom", "Component": "Light Fixtures", "Trade": "Electrical"},
-        {"Room": "Master Bedroom", "Component": "Network Router (if applicable)", "Trade": "Electrical"},
+Electrical"},
         {"Room": "Master Bedroom", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
         {"Room": "Master Bedroom", "Component": "Sliding Glass Door (if applicable)", "Trade": "Windows"},
         {"Room": "Master Bedroom", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Master Bedroom", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
+        {"Room": "Master Bedroom", "Component": "Windows", "Trade": "Windows"},
+        {"Room": "Staircase", "Component": "Railing (if applicable)", "Trade": "Carpentry & Joinery"},
+        {"Room": "Staircase", "Component": "Staircase", "Trade": "Carpentry & Joinery"},
+        {"Room": "Study Area (if applicable)", "Component": "Desk", "Trade": "Carpentry & Joinery"},
+        {"Room": "Study Area (if applicable)", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Study Area (if applicable)", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Study Area (if applicable)", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Study Area (if applicable)", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Upstair Corridor", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Upstair Corridor", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Upstairs Bathroom", "Component": "Bathtub (if applicable)", "Trade": "Plumbing"},
+        {"Room": "Upstairs Bathroom", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Upstairs Bathroom", "Component": "Doors", "Trade": "Doors"},
+        {"Room": "Upstairs Bathroom", "Component": "Exhaust Fan", "Trade": "Electrical"},
+        {"Room": "Upstairs Bathroom", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Upstairs Bathroom", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Upstairs Bathroom", "Component": "Mirror", "Trade": "Carpentry & Joinery"},
+        {"Room": "Upstairs Bathroom", "Component": "Shower", "Trade": "Plumbing"},
+        {"Room": "Upstairs Bathroom", "Component": "Sink", "Trade": "Plumbing"},
+        {"Room": "Upstairs Bathroom", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Upstairs Bathroom", "Component": "Tiles", "Trade": "Flooring - Tiles"},
+        {"Room": "Upstairs Bathroom", "Component": "Toilet", "Trade": "Plumbing"},
+        {"Room": "Upstairs Bathroom", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Upstairs Landing", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Upstairs Landing", "Component": "Flooring", "Trade": "Flooring - Timber"},
+        {"Room": "Upstairs Landing", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Upstairs Landing", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Upstairs Landing", "Component": "Walls", "Trade": "Painting"}
+    ]
+    
+    return pd.DataFrame(mapping_data)
+
+def generate_component_details_summary(defects_only):
+    """Generate detailed component analysis showing which units have defects for each Trade/Room/Component"""
+    
+    if len(defects_only) == 0:
+        return pd.DataFrame(columns=['Trade', 'Room', 'Component', 'Units with Defects'])
+    
+    # Group by Trade, Room, Component and get list of units with defects
+    component_details = defects_only.groupby(['Trade', 'Room', 'Component'])['Unit'].apply(
+        lambda x: ', '.join(sorted(x.astype(str).unique()))
+    ).reset_index()
+    
+    # Rename column to match your example
+    component_details.rename(columns={'Unit': 'Units with Defects'}, inplace=True)
+    
+    # Sort by Trade, then by number of units (descending)
+    component_details['Unit_Count'] = component_details['Units with Defects'].apply(
+        lambda x: len(x.split(', ')) if x else 0
+    )
+    component_details = component_details.sort_values(['Trade', 'Unit_Count'], ascending=[True, False])
+    
+    # Remove the temporary count column
+    component_details = component_details[['Trade', 'Room', 'Component', 'Units with Defects']]
+    
+    return component_detailsPainting"},
         {"Room": "Master Bedroom", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
         {"Room": "Master Bedroom", "Component": "Windows", "Trade": "Windows"},
         {"Room": "Study", "Component": "Carpets", "Trade": "Flooring - Carpets"},
@@ -581,6 +373,9 @@ def calculate_comprehensive_metrics(final_df, df):
     # NEW: Generate Trade Specific Summary with detailed analysis
     trade_specific_summary = generate_trade_specific_summary(final_df, defects_only, total_units)
     
+    # NEW: Generate Component Details Summary like your example
+    component_details_summary = generate_component_details_summary(defects_only)
+    
     return {
         "building_name": building_name,
         "inspection_date": inspection_date,
@@ -605,7 +400,8 @@ def calculate_comprehensive_metrics(final_df, df):
         "summary_unit_trade": summary_unit_trade,
         "summary_room_comp": summary_room_comp,
         "defects_only": defects_only,
-        "trade_specific_summary": trade_specific_summary  # NEW
+        "trade_specific_summary": trade_specific_summary,  # NEW
+        "component_details_summary": component_details_summary  # NEW
     }
 
 def generate_trade_specific_summary(final_df, defects_only, total_units):
@@ -889,6 +685,32 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
                 elif priority_value == 'Low':
                     ws_trade_summary.write(row_num, 7, priority_value, low_priority_format)
         
+        # NEW: Component Details Summary Sheet - Shows which units have defects for each component
+        if len(metrics['component_details_summary']) > 0:
+            metrics['component_details_summary'].to_excel(writer, sheet_name="🔍 Component Details", index=False)
+            ws_component_details = writer.sheets["🔍 Component Details"]
+            
+            # Apply beautiful formatting to Component Details
+            for col_num, value in enumerate(metrics['component_details_summary'].columns.values):
+                ws_component_details.write(0, col_num, value, header_format)
+            
+            # Set column widths for better readability
+            ws_component_details.set_column('A:A', 18)  # Trade
+            ws_component_details.set_column('B:B', 25)  # Room
+            ws_component_details.set_column('C:C', 30)  # Component
+            ws_component_details.set_column('D:D', 50)  # Units with Defects
+            
+            # Add alternating row colors for better readability
+            light_format = workbook.add_format({
+                'bg_color': '#F8F9FA', 'border': 1, 'border_color': '#E9ECEF'
+            })
+            
+            for row_num in range(1, len(metrics['component_details_summary']) + 1):
+                if row_num % 2 == 0:  # Even rows
+                    for col_num in range(len(metrics['component_details_summary'].columns)):
+                        cell_value = metrics['component_details_summary'].iloc[row_num - 1, col_num]
+                        ws_component_details.write(row_num, col_num, cell_value, light_format)
+        
         # Summary sheets if detailed breakdown is requested
         if detailed_breakdown:
             summary_sheets = [
@@ -1070,6 +892,41 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
             </div>
             """, unsafe_allow_html=True)
     
+    # NEW: Component Details Preview
+    if len(metrics['component_details_summary']) > 0:
+        st.markdown("### 🔍 Component Details Analysis")
+        
+        # Show top 10 most problematic components
+        top_components = metrics['component_details_summary'].head(10)
+        
+        st.markdown("#### Top 10 Most Problematic Components")
+        st.dataframe(
+            top_components,
+            use_container_width=True,
+            column_config={
+                "Trade": st.column_config.TextColumn("Trade", width="medium"),
+                "Room": st.column_config.TextColumn("Room", width="medium"),
+                "Component": st.column_config.TextColumn("Component", width="large"),
+                "Units with Defects": st.column_config.TextColumn("Units with Defects", width="x-large")
+            }
+        )
+        
+        # Summary stats
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            unique_problematic_components = len(metrics['component_details_summary'])
+            st.metric("Components with Issues", unique_problematic_components)
+        with col2:
+            most_affected_component = metrics['component_details_summary'].iloc[0] if len(metrics['component_details_summary']) > 0 else None
+            if most_affected_component is not None:
+                max_units = len(most_affected_component['Units with Defects'].split(', '))
+                st.metric("Max Units Affected (Single Component)", max_units)
+        with col3:
+            avg_units_per_component = metrics['component_details_summary']['Units with Defects'].apply(
+                lambda x: len(x.split(', ')) if x else 0
+            ).mean()
+            st.metric("Avg Units per Problematic Component", f"{avg_units_per_component:.1f}")
+    
     # Charts and visualization
     if len(metrics['summary_trade']) > 0:
         st.markdown("### 📈 Visual Analysis")
@@ -1109,20 +966,21 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
     with col2:
         st.metric("📄 File Size", f"{len(excel_buffer.getvalue()) / 1024:.1f} KB")
     
-    # Report contents summary - UPDATED to include Trade Specific Summary
+    # Report contents summary - UPDATED to include Component Details
     st.markdown("#### 📋 What's in Your Report:")
     st.markdown("""
     - **📊 Executive Dashboard** - Key metrics and visual summary
     - **📋 All Inspections** - Complete detailed data
     - **🔍 Defects Only** - Filtered view of issues found
-    - **🔧 Trade Specific Summary** - Comprehensive trade analysis with priorities (NEW!)
+    - **🔧 Trade Specific Summary** - Comprehensive trade analysis with priorities
+    - **🔍 Component Details** - Shows which specific units have defects for each component (NEW!)
     - **📊 By Trade** - Defects grouped by trade category
     - **🏠 By Unit** - Unit-specific defect summaries
     - **🚪 By Room** - Room-specific analysis
     - **🔧 Multiple Views** - Various data perspectives for analysis
     """)
     
-    st.success("🎉 Your professional inspection report is ready! The Excel file contains multiple worksheets with comprehensive analysis, including the new Trade Specific Summary sheet with detailed trade analysis and priorities.")
+    st.success("🎉 Your professional inspection report is ready! The Excel file contains multiple worksheets with comprehensive analysis, including the new Component Details sheet showing exactly which units have defects for each component - just like your example format.")
 
 def process_inspection_file(uploaded_file, trade_mapping, include_charts, detailed_breakdown, executive_summary, notification_email):
     """Process the inspection file using the current trade mapping"""
