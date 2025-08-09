@@ -1,4 +1,4 @@
-# Complete Working Streamlit App with Interactive Trade Mapping Management
+# Complete Working Streamlit App with Word Report Generation
 # File: streamlit_app.py
 
 import streamlit as st
@@ -10,6 +10,14 @@ from datetime import datetime
 import xlsxwriter
 from io import BytesIO, StringIO
 import pytz
+
+# Import the Word report generator
+try:
+    from word_report_generator import generate_professional_word_report
+    WORD_REPORT_AVAILABLE = True
+except ImportError:
+    WORD_REPORT_AVAILABLE = False
+    st.warning("⚠️ Word report generator not available. Please ensure word_report_generator.py is in the same directory.")
 
 # Configure the page
 st.set_page_config(
@@ -142,6 +150,14 @@ st.markdown("""
         margin: 1rem 0;
         box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
     }
+    .word-report-card {
+        background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-left: 5px solid #9c27b0;
+        margin: 1rem 0;
+        box-shadow: 0 2px 8px rgba(156, 39, 176, 0.1);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -151,11 +167,11 @@ if 'trade_mapping' not in st.session_state:
 if 'mapping_edited' not in st.session_state:
     st.session_state.mapping_edited = False
 
-# Header
+# Header - Updated to mention Word reports
 st.markdown("""
 <div class="main-header">
     <h1>🏢 Inspection Report Processor</h1>
-    <p>Upload iAuditor CSV files and generate beautiful Excel reports with custom trade mapping</p>
+    <p>Upload iAuditor CSV files and generate beautiful Excel & Word reports with custom trade mapping</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -723,8 +739,8 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
     excel_buffer.seek(0)
     return excel_buffer
 
-def display_comprehensive_results(metrics, excel_buffer, original_filename):
-    """Display comprehensive processing results"""
+def display_comprehensive_results_with_word(metrics, excel_buffer, original_filename, final_df):
+    """Enhanced display with Word report option"""
     
     st.markdown("---")
     st.markdown("## 🎉 Processing Complete!")
@@ -822,26 +838,141 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
             </div>
             """, unsafe_allow_html=True)
     
-    # Download section
-    st.markdown('<div class="section-header">📥 Download Your Professional Report</div>', unsafe_allow_html=True)
+    # Enhanced Download section with Word reports
+    st.markdown('<div class="section-header">📥 Download Your Professional Reports</div>', unsafe_allow_html=True)
     
     # Get Melbourne timezone for filename
     melbourne_tz = pytz.timezone('Australia/Melbourne')
     melbourne_time = datetime.now(melbourne_tz)
-    filename = f"{metrics['building_name'].replace(' ', '_')}_Inspection_Report_{melbourne_time.strftime('%Y%m%d_%H%M%S')}.xlsx"
+    base_filename = f"{metrics['building_name'].replace(' ', '_')}_Inspection_Report_{melbourne_time.strftime('%Y%m%d_%H%M%S')}"
     
-    st.download_button(
-        label="📊 Download Complete Excel Report",
-        data=excel_buffer,
-        file_name=filename,
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True
-    )
+    # Three-column layout for downloads
+    col1, col2, col3 = st.columns(3)
     
-    st.success("🎉 Your professional inspection report is ready!")
+    with col1:
+        # Excel download (existing)
+        st.markdown("### 📊 Excel Report")
+        excel_filename = f"{base_filename}.xlsx"
+        st.download_button(
+            label="📊 Download Excel Report",
+            data=excel_buffer,
+            file_name=excel_filename,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            help="Comprehensive Excel workbook with all data and analysis"
+        )
+        st.info("📈 Includes charts, pivot tables, and raw data")
+    
+    with col2:
+        # Word report (NEW!)
+        st.markdown("### 📄 Professional Word Report")
+        
+        if WORD_REPORT_AVAILABLE:
+            if st.button("🎨 Generate Word Report", use_container_width=True, type="primary"):
+                with st.spinner("🎨 Creating professional Word document..."):
+                    try:
+                        # Generate Word report using the new module
+                        word_doc = generate_professional_word_report(final_df, metrics)
+                        
+                        # Convert to downloadable format
+                        word_buffer = BytesIO()
+                        word_doc.save(word_buffer)
+                        word_buffer.seek(0)
+                        
+                        word_filename = f"{base_filename}_Professional.docx"
+                        
+                        # Show download button
+                        st.download_button(
+                            label="💾 Download Word Document",
+                            data=word_buffer.getvalue(),
+                            file_name=word_filename,
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            use_container_width=True,
+                            help="Professional report matching industry standards"
+                        )
+                        
+                        st.success("✅ Professional Word report generated successfully!")
+                        
+                        # Show preview info
+                        with st.expander("📋 Report Contents Preview"):
+                            st.markdown(f"""
+                            **Generated Report Includes:**
+                            
+                            📄 **Cover Page**
+                            - Building: {metrics['building_name']}
+                            - Address: {metrics['address']}
+                            - Date: {melbourne_time.strftime('%d %B %Y')}
+                            
+                            📊 **Executive Summary**
+                            - {metrics['total_units']} units inspected
+                            - {metrics['total_defects']} total defects
+                            - {metrics['defect_rate']:.1f}% defect rate
+                            
+                            📈 **Visual Analysis**
+                            - Units with most defects chart
+                            - Trade breakdown visualization
+                            
+                            📋 **Trade-Specific Tables**
+                            - {len(metrics.get('component_details_summary', []))} detailed component entries
+                            - Units affected by trade category
+                            """)
+                        
+                    except Exception as e:
+                        st.error(f"❌ Error generating Word document: {str(e)}")
+                        st.info("💡 Please ensure all required dependencies are installed")
+            
+            # Word report features
+            st.markdown("""
+            <div class="word-report-card">
+                <strong>🎨 Professional Features:</strong><br>
+                ✅ Industry-standard formatting<br>
+                ✅ Executive summary with metrics<br>
+                ✅ Visual charts and graphs<br>
+                ✅ Trade-specific analysis tables<br>
+                ✅ Ready for PDF conversion
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.error("❌ Word report generator not available")
+            st.info("💡 Please ensure word_report_generator.py is in the same directory")
+    
+    with col3:
+        # PDF options
+        st.markdown("### 📄 PDF Options")
+        st.info("""
+        **Convert to PDF:**
+        
+        **Option 1:** Download Word → Save as PDF
+        
+        **Option 2:** Online converters
+        - SmallPDF
+        - ILovePDF
+        - Adobe Online
+        
+        **Option 3:** Automated (Advanced)
+        ```bash
+        pip install docx2pdf
+        ```
+        """)
+        
+        # Show file info
+        with st.expander("📁 File Information"):
+            st.markdown(f"""
+            **Output Files:**
+            - Excel: `{excel_filename}`
+            - Word: `{base_filename}_Professional.docx`
+            - PDF: Convert from Word document
+            
+            **File Sizes (Estimated):**
+            - Excel: ~500KB - 2MB
+            - Word: ~2MB - 5MB
+            - PDF: ~1MB - 3MB
+            """)
+    
+    st.success("🎉 Your professional inspection reports are ready!")
 
 def process_inspection_file(uploaded_file, trade_mapping, include_charts, detailed_breakdown, executive_summary, notification_email):
-    """Process the inspection file"""
+    """Process the inspection file with enhanced Word report support"""
     
     progress_bar = st.progress(0)
     status_text = st.empty()
@@ -873,7 +1004,8 @@ def process_inspection_file(uploaded_file, trade_mapping, include_charts, detail
         progress_bar.progress(100)
         status_text.text("✅ Processing completed successfully!")
         
-        display_comprehensive_results(metrics, excel_buffer, uploaded_file.name)
+        # Use the enhanced display function with Word report support
+        display_comprehensive_results_with_word(metrics, excel_buffer, uploaded_file.name, final_df)
         
         if notification_email and notification_email.strip():
             st.info(f"📧 Email notification would be sent to: {notification_email}")
@@ -993,10 +1125,17 @@ with tab1:
     st.sidebar.title("⚙️ Processing Options")
     st.sidebar.markdown("---")
     
+    # Trade mapping status
     if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
         st.sidebar.success(f"✅ Trade mapping ready ({len(st.session_state.trade_mapping)} mappings)")
     else:
         st.sidebar.warning("⚠️ No trade mapping configured.")
+    
+    # Word report status
+    if WORD_REPORT_AVAILABLE:
+        st.sidebar.success("✅ Word report generator available")
+    else:
+        st.sidebar.warning("⚠️ Word report generator not available")
     
     st.sidebar.subheader("📊 Report Options")
     include_charts = st.sidebar.checkbox("Include analysis charts", value=True)
@@ -1009,14 +1148,43 @@ with tab1:
     # Main content
     st.markdown("## 📤 Upload & Process Inspection Files")
     
+    # Enhanced status display
     if st.session_state.trade_mapping is not None:
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Mappings Loaded", len(st.session_state.trade_mapping))
         with col2:
             st.metric("Trade Categories", st.session_state.trade_mapping['Trade'].nunique() if len(st.session_state.trade_mapping) > 0 else 0)
         with col3:
             st.metric("Room Types", st.session_state.trade_mapping['Room'].nunique() if len(st.session_state.trade_mapping) > 0 else 0)
+        with col4:
+            if WORD_REPORT_AVAILABLE:
+                st.success("📄 Word Reports Ready")
+            else:
+                st.warning("📄 Word Reports N/A")
+    
+    # Enhanced features info
+    with st.expander("🆕 New Features & Report Options"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**📊 Excel Report Features**")
+            st.success("✅ Executive dashboard with key metrics")
+            st.success("✅ Comprehensive data tables")
+            st.success("✅ Trade-specific analysis")
+            st.success("✅ Settlement readiness breakdown")
+        
+        with col2:
+            st.markdown("**📄 Word Report Features**")
+            if WORD_REPORT_AVAILABLE:
+                st.success("✅ Professional cover page")
+                st.success("✅ Executive summary with charts")
+                st.success("✅ Visual defect analysis")
+                st.success("✅ Industry-standard formatting")
+                st.success("✅ Ready for PDF conversion")
+            else:
+                st.error("❌ Word report generator not available")
+                st.info("💡 Add word_report_generator.py to enable")
     
     st.markdown("### 📋 Upload Inspection File")
     uploaded_file = st.file_uploader(
@@ -1037,7 +1205,10 @@ with tab1:
     if uploaded_file is not None:
         st.markdown("---")
         if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
-            if st.button("🚀 Process Inspection Report", type="primary", use_container_width=True):
+            # Enhanced processing button with Word report mention
+            button_text = "🚀 Process & Generate Reports (Excel + Word)" if WORD_REPORT_AVAILABLE else "🚀 Process & Generate Excel Report"
+            
+            if st.button(button_text, type="primary", use_container_width=True):
                 process_inspection_file(
                     uploaded_file, 
                     st.session_state.trade_mapping, 
@@ -1048,16 +1219,57 @@ with tab1:
                 )
         else:
             st.warning("⚠️ Please configure trade mapping first.")
+            
+            # Quick setup option
+            with st.expander("🚀 Quick Setup"):
+                if st.button("🔄 Load Default Trade Mapping", use_container_width=True):
+                    st.session_state.trade_mapping = load_default_mapping()
+                    st.session_state.mapping_edited = True
+                    st.success("✅ Default trade mapping loaded! You can now process your file.")
+                    st.rerun()
 
 with tab3:
     st.markdown("## 📊 Report Analytics & History")
-    st.info("🚧 This section will show historical reports and analytics in future versions")
+    
+    # Enhanced report info section
+    if WORD_REPORT_AVAILABLE:
+        st.markdown("""
+        ### 🆕 Enhanced Report Generation
+        
+        Your app now supports both Excel and professional Word report generation!
+        """)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            **📊 Excel Reports Include:**
+            - Executive dashboard
+            - Comprehensive data analysis
+            - Trade-specific breakdowns
+            - Settlement readiness metrics
+            """)
+        
+        with col2:
+            st.markdown("""
+            **📄 Word Reports Include:**
+            - Professional cover page
+            - Visual charts and graphs
+            - Industry-standard formatting
+            - Ready for client presentation
+            """)
+    else:
+        st.warning("⚠️ Word report generation not available. Please add word_report_generator.py to enable this feature.")
+    
+    st.info("🚧 Historical reports and analytics will be available in future versions")
 
-# Footer
+# Enhanced Footer
 st.markdown("---")
-st.markdown("""
+st.markdown(f"""
 <div style="text-align: center; color: #666; font-size: 0.9em; padding: 2rem;">
-    <h4>🏢 Inspection Report Processor with Trade Analysis</h4>
+    <h4>🏢 Enhanced Inspection Report Processor</h4>
     <p>Professional inspection report processing with comprehensive trade mapping</p>
+    <p><strong>✨ New:</strong> Professional Word report generation {'✅ Available' if WORD_REPORT_AVAILABLE else '⚠️ Requires word_report_generator.py'}</p>
+    <p><strong>Features:</strong> Excel Analysis • Word Reports • PDF Ready • Trade Mapping • Settlement Analysis</p>
 </div>
 """, unsafe_allow_html=True)
