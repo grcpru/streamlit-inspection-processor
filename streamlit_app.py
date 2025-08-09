@@ -1,170 +1,182 @@
 def load_default_mapping():
     """Load your exact 266 trade mappings from master data"""
     
-    # Your exact master mapping data - 266 entries
-    master_mapping_csv = """Room,Component,Trade
-Apartment Entry Door,Door Handle,Doors
-Apartment Entry Door,Door Locks and Keys,Doors
-Apartment Entry Door,Paint,Painting
-Apartment Entry Door,Self Latching,Doors
-Apartment SOU Door,Fire Compliance Tag,Doors
-Balcony,Balustrade,Carpentry & Joinery
-Balcony,Drainage Point,Plumbing
-Balcony,GPO (if applicable),Electrical
-Balcony,Glass,Windows
-Balcony,Glass Sliding Door,Windows
-Balcony,Tiles,Flooring - Tiles
-Bathroom,Bathtub (if applicable),Plumbing
-Bathroom,Ceiling,Painting
-Bathroom,Doors,Doors
-Bathroom,Exhaust Fan,Electrical
-Bathroom,GPO,Electrical
-Bathroom,Light Fixtures,Electrical
-Bathroom,Mirror,Carpentry & Joinery
-Bathroom,Shower,Plumbing
-Bathroom,Sink,Plumbing
-Bathroom,Skirting,Carpentry & Joinery
-Bathroom,Tiles,Flooring - Tiles
-Bathroom,Toilet,Plumbing
-Bathroom,Walls,Painting
-Bathroom / Laundry,Bathroom_Ceiling,Painting
-Bathroom / Laundry,Bathroom_Doors,Doors
-Bathroom / Laundry,Bathroom_Exhaust Fan,Electrical
-Bathroom / Laundry,Bathroom_GPO,Electrical
-Bathroom / Laundry,Bathroom_Light Fixtures,Electrical
-Bathroom / Laundry,Bathroom_Mirror,Carpentry & Joinery
-Bathroom / Laundry,Bathroom_Shower,Plumbing
-Bathroom / Laundry,Bathroom_Sink,Plumbing
-Bathroom / Laundry,Bathroom_Skirting,Carpentry & Joinery
-Bathroom / Laundry,Bathroom_Tiles,Flooring - Tiles
-Bathroom / Laundry,Bathroom_Toilet,Plumbing
-Bathroom / Laundry,Bathroom_Walls,Painting
-Bathroom / Laundry,Ceiling,Painting
-Bathroom / Laundry,Cold/Hot Water Outlets,Plumbing
-Bathroom / Laundry,Doors,Doors
-Bathroom / Laundry,Drainage,Plumbing
-Bathroom / Laundry,Exhaust Fan,Electrical
-Bathroom / Laundry,GPO,Electrical
-Bathroom / Laundry,Laundry Section_Cold/Hot Water Outlets,Plumbing
-Bathroom / Laundry,Laundry Section_Doors,Doors
-Bathroom / Laundry,Laundry Section_Drainage,Plumbing
-Bathroom / Laundry,Laundry Section_Exhaust Fan,Electrical
-Bathroom / Laundry,Laundry Section_GPO,Electrical
-Bathroom / Laundry,Laundry Section_Laundry Sink,Plumbing
-Bathroom / Laundry,Laundry Section_Light Fixtures,Electrical
-Bathroom / Laundry,Laundry Section_Skirting,Carpentry & Joinery
-Bathroom / Laundry,Laundry Section_Tiles,Flooring - Tiles
-Bathroom / Laundry,Laundry Section_Walls,Painting
-Bathroom / Laundry,Laundry Sink (if applicable),Plumbing
-Bathroom / Laundry,Light Fixtures,Electrical
-Bathroom / Laundry,Mirror,Carpentry & Joinery
-Bathroom / Laundry,Shower,Plumbing
-Bathroom / Laundry,Sink,Plumbing
-Bathroom / Laundry,Skirting,Carpentry & Joinery
-Bathroom / Laundry,Tiles,Flooring - Tiles
-Bathroom / Laundry,Toilet,Plumbing
-Bathroom / Laundry,Walls,Painting
-Bathroom / Laundry,Laundry Sink,Plumbing
-Bedroom,Carpets,Flooring - Carpets
-Bedroom,Ceiling,Painting
-Bedroom,Doors,Doors
-Bedroom,GPO,Electrical
-Bedroom,Light Fixtures,Electrical
-Bedroom,Network Router,Electrical
-Bedroom,Network Router (if applicable),Electrical
-Bedroom,Skirting,Carpentry & Joinery
-Bedroom,Sliding Glass Door (if applicable),Windows
-Bedroom,Walls,Painting
-Bedroom,Wardrobe,Carpentry & Joinery
-Bedroom,Windows,Windows
-Bedroom 1,Carpets,Flooring - Carpets
-Bedroom 1,Ceiling,Painting
-Bedroom 1,Doors,Doors
-Bedroom 1,GPO,Electrical
-Bedroom 1,Light Fixtures,Electrical
-Bedroom 1,Network Router (if applicable),Electrical
-Bedroom 1,Skirting,Carpentry & Joinery
-Bedroom 1,Walls,Doors
-Bedroom 1,Wardrobe,Carpentry & Joinery
-Bedroom 1,Windows,Windows
-Bedroom 1 w/Ensuite,Bathtub (if applicable),Plumbing
-Bedroom 1 w/Ensuite,Carpets,Flooring - Carpets
-Bedroom 1 w/Ensuite,Ceiling,Painting
-Bedroom 1 w/Ensuite,Doors,Doors
-Bedroom 1 w/Ensuite,Exhaust Fan,Electrical
-Bedroom 1 w/Ensuite,GPO,Electrical
-Bedroom 1 w/Ensuite,Light Fixtures,Electrical
-Bedroom 1 w/Ensuite,Mirror,Carpentry & Joinery
-Bedroom 1 w/Ensuite,Network Router (if applicable),Electrical
-Bedroom 1 w/Ensuite,Shower,Plumbing
-Bedroom 1 w/Ensuite,Sink,Plumbing
-Bedroom 1 w/Ensuite,Skirting,Carpentry & Joinery
-Bedroom 1 w/Ensuite,Tiles,Flooring - Tiles
-Bedroom 1 w/Ensuite,Toilet,Plumbing
-Bedroom 1 w/Ensuite,Walls,Painting
-Bedroom 1 w/Ensuite,Wardrobe,Carpentry & Joinery
-Bedroom 1 w/Ensuite,Windows,Windows
-Bedroom 2,Carpets,Flooring - Carpets
-Bedroom 2,Ceiling,Painting
-Bedroom 2,Doors,Doors
-Bedroom 2,GPO,Electrical
-Bedroom 2,Light Fixtures,Electrical
-Bedroom 2,Network Router (if applicable),Electrical
-Bedroom 2,Skirting,Carpentry & Joinery
-Bedroom 2,Sliding Glass Door (if applicable),Windows
-Bedroom 2,Walls,Painting
-Bedroom 2,Wardrobe,Carpentry & Joinery
-Bedroom 2,Windows,Windows
-Bedroom 2 w/Ensuite,Bathtub (if applicable),Plumbing
-Bedroom 2 w/Ensuite,Carpets,Flooring - Carpets
-Bedroom 2 w/Ensuite,Ceiling,Painting
-Bedroom 2 w/Ensuite,Doors,Doors
-Bedroom 2 w/Ensuite,Exhaust Fan,Electrical
-Bedroom 2 w/Ensuite,GPO,Electrical
-Bedroom 2 w/Ensuite,Light Fixtures,Electrical
-Bedroom 2 w/Ensuite,Mirror,Carpentry & Joinery
-Bedroom 2 w/Ensuite,Network Router (if applicable),Electrical
-Bedroom 2 w/Ensuite,Shower,Plumbing
-Bedroom 2 w/Ensuite,Sink,Plumbing
-Bedroom 2 w/Ensuite,Skirting,Carpentry & Joinery
-Bedroom 2 w/Ensuite,Tiles,Flooring - Tiles
-Bedroom 2 w/Ensuite,Toilet,Plumbing
-Bedroom 2 w/Ensuite,Walls,Painting
-Bedroom 2 w/Ensuite,Wardrobe,Carpentry & Joinery
-Bedroom 2 w/Ensuite,Windows,Windows
-Bedroom 3,Carpets,Flooring - Carpets
-Bedroom 3,Ceiling,Painting
-Bedroom 3,Doors,Doors
-Bedroom 3,GPO,Electrical
-Bedroom 3,Light Fixtures,Electrical
-Bedroom 3,Network Router (if applicable),Electrical
-Bedroom 3,Skirting,Carpentry & Joinery
-Bedroom 3,Sliding Glass Door (if applicable),Windows
-Bedroom 3,Walls,Painting
-Bedroom 3,Wardrobe,Carpentry & Joinery
-Bedroom 3,Windows,Windows
-Bedroom w/Ensuite,Bathtub (if applicable),Plumbing
-Bedroom w/Ensuite,Carpets,Flooring - Carpets
-Bedroom w/Ensuite,Ceiling,Painting
-Bedroom w/Ensuite,Doors,Doors
-Bedroom w/Ensuite,Exhaust Fan,Electrical
-Bedroom w/Ensuite,GPO,Electrical
-Bedroom w/Ensuite,Light Fixtures,Electrical
-Bedroom w/Ensuite,Mirror,Carpentry & Joinery
-Bedroom w/Ensuite,Network Router (if applicable),Electrical
-Bedroom w/Ensuite,Shower,Plumbing
-Bedroom w/Ensuite,Sink,Plumbing
-Bedroom w/Ensuite,Skirting,Carpentry & Joinery
-Bedroom w/Ensuite,Sliding Glass Door (if applicable),Windows
-Bedroom w/Ensuite,Tiles,Flooring - Tiles
-Bedroom w/Ensuite,Toilet,Plumbing
-Bedroom w/Ensuite,Walls,Painting
-Bedroom w/Ensuite,Wardrobe,Carpentry & Joinery
-Bedroom w/Ensuite,Windows,Windows
-Butler's Pantry,Cabinets/Shelving,Carpentry & Joinery
-Butler's Pantry,Ceiling,Painting
-Butler's Pantry,Flooring,Flooring - Timber
-Butler's Pantry,GPO,Electrical
+    # Parse the mapping data directly from lists to avoid CSV parsing issues
+    import pandas as pd
+    
+    # Your exact master mapping data - 266 entries as lists
+    rooms = [
+        "Apartment Entry Door", "Apartment Entry Door", "Apartment Entry Door", "Apartment Entry Door",
+        "Apartment SOU Door", "Balcony", "Balcony", "Balcony", "Balcony", "Balcony", "Balcony",
+        "Bathroom", "Bathroom", "Bathroom", "Bathroom", "Bathroom", "Bathroom", "Bathroom",
+        "Bathroom", "Bathroom", "Bathroom", "Bathroom", "Bathroom", "Bathroom",
+        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
+        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
+        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
+        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
+        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
+        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
+        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
+        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
+        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
+        "Bedroom", "Bedroom", "Bedroom", "Bedroom", "Bedroom", "Bedroom", "Bedroom", "Bedroom",
+        "Bedroom", "Bedroom", "Bedroom", "Bedroom", "Bedroom 1", "Bedroom 1", "Bedroom 1",
+        "Bedroom 1", "Bedroom 1", "Bedroom 1", "Bedroom 1", "Bedroom 1", "Bedroom 1", "Bedroom 1",
+        "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite",
+        "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite",
+        "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite",
+        "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite",
+        "Bedroom 1 w/Ensuite", "Bedroom 2", "Bedroom 2", "Bedroom 2", "Bedroom 2", "Bedroom 2",
+        "Bedroom 2", "Bedroom 2", "Bedroom 2", "Bedroom 2", "Bedroom 2", "Bedroom 2",
+        "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite",
+        "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite",
+        "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite",
+        "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite",
+        "Bedroom 2 w/Ensuite", "Bedroom 3", "Bedroom 3", "Bedroom 3", "Bedroom 3", "Bedroom 3",
+        "Bedroom 3", "Bedroom 3", "Bedroom 3", "Bedroom 3", "Bedroom 3", "Bedroom 3",
+        "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite",
+        "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite",
+        "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite",
+        "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite",
+        "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Butler's Pantry", "Butler's Pantry",
+        "Butler's Pantry", "Butler's Pantry", "Butler's Pantry", "Butler's Pantry",
+        "Butler's Pantry (if applicable)", "Butler's Pantry (if applicable)", "Butler's Pantry (if applicable)",
+        "Butler's Pantry (if applicable)", "Butler's Pantry (if applicable)", "Butler's Pantry (if applicable)",
+        "Corridor", "Corridor", "Corridor", "Corridor", "Corridor", "Corridor",
+        "Dining & Living Room Area", "Dining & Living Room Area", "Dining & Living Room Area",
+        "Dining & Living Room Area", "Dining & Living Room Area", "Dining & Living Room Area",
+        "Dining & Living Room Area", "Downstairs Bathroom", "Downstairs Bathroom", "Downstairs Bathroom",
+        "Downstairs Bathroom", "Downstairs Bathroom", "Downstairs Bathroom", "Downstairs Bathroom",
+        "Downstairs Bathroom", "Downstairs Bathroom", "Downstairs Bathroom", "Downstairs Bathroom",
+        "Downstairs Bathroom", "Downstairs Toilet (if applicable)", "Downstairs Toilet (if applicable)",
+        "Downstairs Toilet (if applicable)", "Downstairs Toilet (if applicable)", "Downstairs Toilet (if applicable)",
+        "Downstairs Toilet (if applicable)", "Downstairs Toilet (if applicable)", "Downstairs Toilet (if applicable)",
+        "Downstairs Toilet (if applicable)", "Kitchen Area", "Kitchen Area", "Kitchen Area", "Kitchen Area",
+        "Kitchen Area", "Kitchen Area", "Kitchen Area", "Kitchen Area", "Kitchen Area", "Kitchen Area",
+        "Kitchen Area", "Kitchen Area", "Laundry Room", "Laundry Room", "Laundry Room", "Laundry Room",
+        "Laundry Room", "Laundry Room", "Laundry Room", "Laundry Room", "Laundry Room", "Laundry Room",
+        "Laundry Room", "Laundry Section", "Laundry Section", "Laundry Section", "Laundry Section",
+        "Laundry Section", "Laundry Section", "Laundry Section", "Laundry Section", "Laundry Section",
+        "Laundry Section", "Staircase", "Staircase", "Staircase", "Staircase", "Staircase", "Staircase",
+        "Study Area (if applicable)", "Study Area (if applicable)", "Study Area (if applicable)",
+        "Study Area (if applicable)", "Study Area (if applicable)", "Upstair Corridor", "Upstair Corridor",
+        "Upstair Corridor", "Upstair Corridor", "Upstair Corridor", "Upstairs Bathroom", "Upstairs Bathroom",
+        "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom",
+        "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom",
+        "Upstairs Bathroom"
+    ]
+    
+    components = [
+        "Door Handle", "Door Locks and Keys", "Paint", "Self Latching", "Fire Compliance Tag",
+        "Balustrade", "Drainage Point", "GPO (if applicable)", "Glass", "Glass Sliding Door", "Tiles",
+        "Bathtub (if applicable)", "Ceiling", "Doors", "Exhaust Fan", "GPO", "Light Fixtures", "Mirror",
+        "Shower", "Sink", "Skirting", "Tiles", "Toilet", "Walls", "Bathroom_Ceiling", "Bathroom_Doors",
+        "Bathroom_Exhaust Fan", "Bathroom_GPO", "Bathroom_Light Fixtures", "Bathroom_Mirror",
+        "Bathroom_Shower", "Bathroom_Sink", "Bathroom_Skirting", "Bathroom_Tiles", "Bathroom_Toilet",
+        "Bathroom_Walls", "Ceiling", "Cold/Hot Water Outlets", "Doors", "Drainage", "Exhaust Fan",
+        "GPO", "Laundry Section_Cold/Hot Water Outlets", "Laundry Section_Doors", "Laundry Section_Drainage",
+        "Laundry Section_Exhaust Fan", "Laundry Section_GPO", "Laundry Section_Laundry Sink",
+        "Laundry Section_Light Fixtures", "Laundry Section_Skirting", "Laundry Section_Tiles",
+        "Laundry Section_Walls", "Laundry Sink (if applicable)", "Light Fixtures", "Mirror", "Shower",
+        "Sink", "Skirting", "Tiles", "Toilet", "Walls", "Laundry Sink", "Carpets", "Ceiling", "Doors",
+        "GPO", "Light Fixtures", "Network Router", "Network Router (if applicable)", "Skirting",
+        "Sliding Glass Door (if applicable)", "Walls", "Wardrobe", "Windows", "Carpets", "Ceiling",
+        "Doors", "GPO", "Light Fixtures", "Network Router (if applicable)", "Skirting", "Walls",
+        "Wardrobe", "Windows", "Bathtub (if applicable)", "Carpets", "Ceiling", "Doors", "Exhaust Fan",
+        "GPO", "Light Fixtures", "Mirror", "Network Router (if applicable)", "Shower", "Sink",
+        "Skirting", "Tiles", "Toilet", "Walls", "Wardrobe", "Windows", "Carpets", "Ceiling", "Doors",
+        "GPO", "Light Fixtures", "Network Router (if applicable)", "Skirting", "Sliding Glass Door (if applicable)",
+        "Walls", "Wardrobe", "Windows", "Bathtub (if applicable)", "Carpets", "Ceiling", "Doors",
+        "Exhaust Fan", "GPO", "Light Fixtures", "Mirror", "Network Router (if applicable)", "Shower",
+        "Sink", "Skirting", "Tiles", "Toilet", "Walls", "Wardrobe", "Windows", "Carpets", "Ceiling",
+        "Doors", "GPO", "Light Fixtures", "Network Router (if applicable)", "Skirting",
+        "Sliding Glass Door (if applicable)", "Walls", "Wardrobe", "Windows", "Bathtub (if applicable)",
+        "Carpets", "Ceiling", "Doors", "Exhaust Fan", "GPO", "Light Fixtures", "Mirror",
+        "Network Router (if applicable)", "Shower", "Sink", "Skirting", "Sliding Glass Door (if applicable)",
+        "Tiles", "Toilet", "Walls", "Wardrobe", "Windows", "Cabinets/Shelving", "Ceiling", "Flooring",
+        "GPO", "Light Fixtures", "Sink", "Cabinets/Shelving", "Ceiling", "Flooring", "GPO",
+        "Light Fixtures", "Sink", "Ceiling", "Flooring", "Intercom", "Light Fixtures", "Skirting",
+        "Walls", "Ceiling", "Flooring", "GPO", "Light Fixtures", "Skirting", "Walls",
+        "Windows (if applicable)", "Ceiling", "Doors", "Exhaust Fan", "GPO", "Light Fixtures", "Mirror",
+        "Shower", "Sink", "Skirting", "Tiles", "Toilet", "Walls", "Ceiling", "Doors", "Exhaust Fan",
+        "Light Fixtures", "Sink", "Skirting", "Tiles", "Toilet", "Walls", "Cabinets", "Ceiling",
+        "Dishwasher", "Dishwasher (if applicable)", "Flooring", "GPO", "Kitchen Sink", "Kitchen Table Tops",
+        "Light Fixtures", "Rangehood", "Splashbacks", "Stovetop and Oven", "Cold/Hot Water Outlets",
+        "Doors", "Drainage", "Exhaust Fan", "GPO", "Laundry Sink", "Light Fixtures", "Skirting",
+        "Tiles", "Walls", "Windows (if applicable)", "Cold/Hot Water Outlets", "Doors", "Drainage",
+        "Exhaust Fan", "GPO", "Laundry Sink", "Light Fixtures", "Skirting", "Tiles", "Walls",
+        "Ceiling", "Light Fixtures", "Railing (if applicable)", "Skirting", "Staircase", "Walls",
+        "Desk", "GPO", "Light Fixtures", "Skirting", "Walls", "Ceiling", "Flooring", "Light Fixtures",
+        "Skirting", "Walls", "Bathtub (if applicable)", "Ceiling", "Doors", "Exhaust Fan", "GPO",
+        "Light Fixtures", "Mirror", "Shower", "Sink", "Skirting", "Tiles", "Toilet", "Walls"
+    ]
+    
+    trades = [
+        "Doors", "Doors", "Painting", "Doors", "Doors", "Carpentry & Joinery", "Plumbing",
+        "Electrical", "Windows", "Windows", "Flooring - Tiles", "Plumbing", "Painting", "Doors",
+        "Electrical", "Electrical", "Electrical", "Carpentry & Joinery", "Plumbing", "Plumbing",
+        "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting", "Painting", "Doors",
+        "Electrical", "Electrical", "Electrical", "Carpentry & Joinery", "Plumbing", "Plumbing",
+        "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting", "Painting", "Plumbing",
+        "Doors", "Plumbing", "Electrical", "Electrical", "Plumbing", "Doors", "Plumbing",
+        "Electrical", "Electrical", "Plumbing", "Electrical", "Carpentry & Joinery",
+        "Flooring - Tiles", "Painting", "Plumbing", "Electrical", "Carpentry & Joinery",
+        "Plumbing", "Plumbing", "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting",
+        "Plumbing", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
+        "Electrical", "Electrical", "Carpentry & Joinery", "Windows", "Painting",
+        "Carpentry & Joinery", "Windows", "Flooring - Carpets", "Painting", "Doors", "Electrical",
+        "Electrical", "Electrical", "Carpentry & Joinery", "Doors", "Carpentry & Joinery",
+        "Windows", "Plumbing", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
+        "Electrical", "Carpentry & Joinery", "Electrical", "Plumbing", "Plumbing",
+        "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting", "Carpentry & Joinery",
+        "Windows", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
+        "Electrical", "Carpentry & Joinery", "Windows", "Painting", "Carpentry & Joinery",
+        "Windows", "Plumbing", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
+        "Electrical", "Carpentry & Joinery", "Electrical", "Plumbing", "Plumbing",
+        "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting", "Carpentry & Joinery",
+        "Windows", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
+        "Electrical", "Carpentry & Joinery", "Windows", "Painting", "Carpentry & Joinery",
+        "Windows", "Plumbing", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
+        "Electrical", "Carpentry & Joinery", "Electrical", "Plumbing", "Plumbing",
+        "Carpentry & Joinery", "Windows", "Flooring - Tiles", "Plumbing", "Painting",
+        "Carpentry & Joinery", "Windows", "Carpentry & Joinery", "Painting", "Flooring - Timber",
+        "Electrical", "Electrical", "Plumbing", "Carpentry & Joinery", "Painting",
+        "Flooring - Timber", "Electrical", "Electrical", "Plumbing", "Painting",
+        "Flooring - Timber", "Electrical", "Electrical", "Carpentry & Joinery", "Painting",
+        "Painting", "Flooring - Timber", "Electrical", "Electrical", "Carpentry & Joinery",
+        "Painting", "Windows", "Painting", "Doors", "Electrical", "Electrical", "Electrical",
+        "Carpentry & Joinery", "Plumbing", "Plumbing", "Carpentry & Joinery", "Flooring - Tiles",
+        "Plumbing", "Painting", "Painting", "Doors", "Electrical", "Electrical", "Plumbing",
+        "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting", "Carpentry & Joinery",
+        "Painting", "Plumbing", "Plumbing", "Flooring - Timber", "Electrical", "Plumbing",
+        "Carpentry & Joinery", "Electrical", "Appliances", "Painting", "Appliances", "Plumbing",
+        "Doors", "Plumbing", "Electrical", "Electrical", "Plumbing", "Electrical",
+        "Carpentry & Joinery", "Flooring - Tiles", "Painting", "Windows", "Plumbing", "Doors",
+        "Plumbing", "Electrical", "Electrical", "Plumbing", "Electrical", "Carpentry & Joinery",
+        "Flooring - Tiles", "Painting", "Painting", "Electrical", "Carpentry & Joinery",
+        "Carpentry & Joinery", "Carpentry & Joinery", "Painting", "Carpentry & Joinery",
+        "Electrical", "Electrical", "Carpentry & Joinery", "Painting", "Painting",
+        "Flooring - Timber", "Electrical", "Carpentry & Joinery", "Painting", "Plumbing",
+        "Painting", "Doors", "Electrical", "Electrical", "Electrical", "Carpentry & Joinery",
+        "Plumbing", "Plumbing", "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting"
+    ]
+    
+    # Verify the data is exactly 266 entries
+    assert len(rooms) == 266, f"Rooms list should have 266 entries, got {len(rooms)}"
+    assert len(components) == 266, f"Components list should have 266 entries, got {len(components)}"
+    assert len(trades) == 266, f"Trades list should have 266 entries, got {len(trades)}"
+    
+    # Create DataFrame
+    df = pd.DataFrame({
+        'Room': rooms,
+        'Component': components,
+        'Trade': trades
+    })
+    
+    # Display confirmation message
+    st.success(f"✅ Loaded exactly {len(df)} trade mappings from master data!")
+    
+    return df,GPO,Electrical
 Butler's Pantry,Light Fixtures,Electrical
 Butler's Pantry,Sink,Plumbing
 Butler's Pantry (if applicable),Cabinets/Shelving,Carpentry & Joinery
