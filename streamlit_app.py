@@ -1,4 +1,23 @@
-# Complete Working Streamlit App with Interactive Trade Mapping Management
+def display_comprehensive_results(metrics, excel_buffer, original_filename):
+    """Display comprehensive processing results with enhanced visual design"""
+    
+    st.markdown("---")
+    st.markdown("## 🎉 Processing Complete!")
+    
+    # Success message with enhanced styling
+    st.markdown(f"""
+    <div class="success-message">
+        <h3>✅ Inspection Report Generated Successfully!</h3>
+        <p><strong>🏢 Building:</strong> {metrics['building_name']}</p>
+        <p><strong>📅 Inspection Date:</strong> {metrics['inspection_date']}</p>
+        <p><strong>📍 Address:</strong> {metrics['address']}</p>
+        <p><strong>📄 Source File:</strong> {original_filename}</p>
+        <p><strong>⏰ Processing Time:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Key metrics section with enhanced cards
+    st.# Complete Working Streamlit App with Interactive Trade Mapping Management
 # File: streamlit_app.py
 
 import streamlit as st
@@ -22,66 +41,161 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-header {
-        background: linear-gradient(90deg, #2E7D32, #1976D2);
-        padding: 1.5rem;
-        border-radius: 10px;
+        background: linear-gradient(135deg, #4CAF50, #2196F3);
+        padding: 2rem;
+        border-radius: 15px;
         margin-bottom: 2rem;
         text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     .main-header h1 {
         color: white;
         margin: 0;
-        font-size: 2.5rem;
+        font-size: 2.8rem;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
     .main-header p {
         color: white;
-        margin: 0.5rem 0 0 0;
-        font-size: 1.2rem;
+        margin: 0.8rem 0 0 0;
+        font-size: 1.3rem;
+        opacity: 0.95;
     }
     .metric-card {
-        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-        padding: 1.5rem;
-        border-radius: 10px;
-        border: 1px solid #dee2e6;
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        padding: 2rem;
+        border-radius: 15px;
+        border: 2px solid #e9ecef;
         text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: transform 0.2s ease;
+        height: 140px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
     }
     .metric-value {
-        font-size: 2rem;
-        font-weight: bold;
+        font-size: 2.5rem;
+        font-weight: 800;
         color: #2E7D32;
         margin: 0;
+        line-height: 1;
     }
     .metric-label {
-        font-size: 0.9rem;
+        font-size: 1rem;
         color: #666;
-        margin: 0.5rem 0 0 0;
+        margin: 0.8rem 0 0 0;
+        font-weight: 500;
     }
     .success-message {
         background: linear-gradient(135deg, #d4edda, #c3e6cb);
         color: #155724;
-        padding: 1.5rem;
-        border-radius: 10px;
-        border: 1px solid #c3e6cb;
-        margin: 1rem 0;
+        padding: 2rem;
+        border-radius: 15px;
+        border: 2px solid #c3e6cb;
+        margin: 1.5rem 0;
+        box-shadow: 0 4px 12px rgba(21, 87, 36, 0.1);
+    }
+    .success-message h3 {
+        margin-top: 0;
+        color: #155724;
     }
     .readiness-card {
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
+        padding: 1.2rem;
+        border-radius: 10px;
+        margin: 0.8rem 0;
         text-align: center;
-        font-weight: bold;
+        font-weight: 600;
+        font-size: 1.1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .ready { background: linear-gradient(135deg, #d4edda, #c3e6cb); color: #155724; }
-    .minor { background: linear-gradient(135deg, #fff3cd, #ffeaa7); color: #856404; }
-    .major { background: linear-gradient(135deg, #f8d7da, #f5c6cb); color: #721c24; }
-    .extensive { background: linear-gradient(135deg, #f8d7da, #dc3545); color: white; }
+    .ready { 
+        background: linear-gradient(135deg, #c8e6c9, #a5d6a7); 
+        color: #2e7d32; 
+        border-left: 5px solid #4caf50;
+    }
+    .minor { 
+        background: linear-gradient(135deg, #fff3c4, #fff176); 
+        color: #f57f17; 
+        border-left: 5px solid #ffeb3b;
+    }
+    .major { 
+        background: linear-gradient(135deg, #ffcdd2, #ef9a9a); 
+        color: #c62828; 
+        border-left: 5px solid #f44336;
+    }
+    .extensive { 
+        background: linear-gradient(135deg, #f8bbd9, #f48fb1); 
+        color: #ad1457; 
+        border-left: 5px solid #e91e63;
+    }
     .trade-item {
-        background: linear-gradient(135deg, #fff, #f8f9fa);
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-        border-left: 4px solid #007bff;
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin: 0.8rem 0;
+        border-left: 5px solid #2196f3;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .section-header {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 10px;
+        margin: 2rem 0 1rem 0;
+        text-align: center;
+        font-weight: 600;
+        font-size: 1.3rem;
+        box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+    }
+    .info-card {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-left: 5px solid #2196f3;
+        margin: 1rem 0;
+        box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+    }
+    .warning-card {
+        background: linear-gradient(135deg, #fff3e0, #ffcc02);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-left: 5px solid #ff9800;
+        margin: 1rem 0;
+        box-shadow: 0 2px 8px rgba(255, 152, 0, 0.1);
+    }
+    .stButton > button {
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        border-radius: 10px;
+        border: none;
+        padding: 0.8rem 2rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    }
+    .upload-section {
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        padding: 2rem;
+        border-radius: 15px;
+        border: 2px dashed #dee2e6;
+        margin: 1.5rem 0;
+        text-align: center;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -621,35 +735,90 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
     with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
         workbook = writer.book
         
-        # Define formats
-        header_format = workbook.add_format({
-            'bold': True, 'bg_color': '#2E7D32', 'font_color': 'white',
-            'border': 1, 'align': 'center'
-        })
-        
-        building_info_header = workbook.add_format({
-            'bold': True, 'font_size': 14, 'bg_color': '#2E7D32', 'font_color': 'white',
+        # Define comprehensive formats matching the image style
+        # Building Information Header (Green)
+        building_header = workbook.add_format({
+            'bold': True, 'font_size': 16, 'bg_color': '#4CAF50', 'font_color': 'white',
             'align': 'center', 'valign': 'vcenter', 'border': 2
         })
         
+        # Inspection Summary Header (Blue)
+        inspection_header = workbook.add_format({
+            'bold': True, 'font_size': 16, 'bg_color': '#2196F3', 'font_color': 'white',
+            'align': 'center', 'valign': 'vcenter', 'border': 2
+        })
+        
+        # Settlement Readiness Header (Orange)
+        settlement_header = workbook.add_format({
+            'bold': True, 'font_size': 16, 'bg_color': '#FF9800', 'font_color': 'white',
+            'align': 'center', 'valign': 'vcenter', 'border': 2
+        })
+        
+        # Top Problem Trades Header (Purple)
+        trades_header = workbook.add_format({
+            'bold': True, 'font_size': 16, 'bg_color': '#9C27B0', 'font_color': 'white',
+            'align': 'center', 'valign': 'vcenter', 'border': 2
+        })
+        
+        # Label formats
         label_format = workbook.add_format({
-            'bold': True, 'font_size': 11, 'bg_color': '#F5F5F5', 'border': 1,
+            'bold': True, 'font_size': 12, 'bg_color': '#E8E8E8', 'border': 1,
             'align': 'left', 'valign': 'vcenter'
         })
         
+        # Data formats
         data_format = workbook.add_format({
-            'font_size': 11, 'border': 1, 'align': 'right', 'valign': 'vcenter'
+            'font_size': 12, 'border': 1, 'align': 'right', 'valign': 'vcenter'
+        })
+        
+        # Special data formats for readiness categories
+        ready_format = workbook.add_format({
+            'font_size': 12, 'border': 1, 'align': 'right', 'valign': 'vcenter',
+            'bg_color': '#C8E6C9'  # Light green
+        })
+        
+        minor_format = workbook.add_format({
+            'font_size': 12, 'border': 1, 'align': 'right', 'valign': 'vcenter',
+            'bg_color': '#FFF3C4'  # Light yellow
+        })
+        
+        major_format = workbook.add_format({
+            'font_size': 12, 'border': 1, 'align': 'right', 'valign': 'vcenter',
+            'bg_color': '#FFCDD2'  # Light red
+        })
+        
+        extensive_format = workbook.add_format({
+            'font_size': 12, 'border': 1, 'align': 'right', 'valign': 'vcenter',
+            'bg_color': '#F8BBD9'  # Light pink
+        })
+        
+        # Trade ranking formats
+        trade_rank_format = workbook.add_format({
+            'bold': True, 'font_size': 11, 'bg_color': '#F3E5F5', 'border': 1,
+            'align': 'left', 'valign': 'vcenter'
+        })
+        
+        trade_count_format = workbook.add_format({
+            'font_size': 11, 'border': 1, 'align': 'right', 'valign': 'vcenter',
+            'bg_color': '#F3E5F5'
+        })
+        
+        # Footer format
+        footer_format = workbook.add_format({
+            'font_size': 10, 'border': 1, 'align': 'right', 'valign': 'vcenter',
+            'italic': True, 'bg_color': '#F5F5F5'
         })
         
         # Create Executive Dashboard
         worksheet = workbook.add_worksheet("📊 Executive Dashboard")
-        worksheet.set_column('A:A', 25)
-        worksheet.set_column('B:B', 35)
+        worksheet.set_column('A:A', 30)
+        worksheet.set_column('B:B', 40)
         
         current_row = 0
         
-        # Building Information
-        worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '🏢 BUILDING INFORMATION', building_info_header)
+        # === BUILDING INFORMATION SECTION ===
+        worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '🏢 BUILDING INFORMATION', building_header)
+        worksheet.set_row(current_row, 25)  # Make header row taller
         current_row += 2
         
         building_data = [
@@ -665,32 +834,121 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
             worksheet.write(current_row, 1, value, data_format)
             current_row += 1
         
-        # Add other detailed data sheets
+        current_row += 1  # Add spacing
+        
+        # === INSPECTION SUMMARY SECTION ===
+        worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '📋 INSPECTION SUMMARY', inspection_header)
+        worksheet.set_row(current_row, 25)
+        current_row += 2
+        
+        inspection_data = [
+            ('Total Inspection Points', f"{metrics['total_inspections']:,}"),
+            ('Total Defects Found', f"{metrics['total_defects']:,}"),
+            ('Overall Defect Rate', f"{metrics['defect_rate']:.2f}%"),
+            ('Average Defects per Unit', f"{metrics['avg_defects_per_unit']:.1f}")
+        ]
+        
+        for label, value in inspection_data:
+            worksheet.write(current_row, 0, label, label_format)
+            worksheet.write(current_row, 1, value, data_format)
+            current_row += 1
+        
+        current_row += 1  # Add spacing
+        
+        # === SETTLEMENT READINESS SECTION ===
+        worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '🏠 SETTLEMENT READINESS', settlement_header)
+        worksheet.set_row(current_row, 25)
+        current_row += 2
+        
+        # Settlement readiness data with different colors
+        readiness_data = [
+            ('✅ Ready (0-2 defects)', f"{metrics['ready_units']} units ({metrics['ready_pct']:.1f}%)", ready_format),
+            ('⚠️ Minor work (3-7 defects)', f"{metrics['minor_work_units']} units ({metrics['minor_pct']:.1f}%)", minor_format),
+            ('🔧 Major work (8-15 defects)', f"{metrics['major_work_units']} units ({metrics['major_pct']:.1f}%)", major_format),
+            ('🚧 Extensive work (15+ defects)', f"{metrics['extensive_work_units']} units ({metrics['extensive_pct']:.1f}%)", extensive_format)
+        ]
+        
+        for label, value, cell_format in readiness_data:
+            worksheet.write(current_row, 0, label, label_format)
+            worksheet.write(current_row, 1, value, cell_format)
+            current_row += 1
+        
+        current_row += 1  # Add spacing
+        
+        # === TOP PROBLEM TRADES SECTION ===
+        worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '⚠️ TOP PROBLEM TRADES', trades_header)
+        worksheet.set_row(current_row, 25)
+        current_row += 2
+        
+        # Get top 5 trades by defect count
+        top_trades = metrics['summary_trade'].head(5)
+        
+        for idx, (_, row) in enumerate(top_trades.iterrows(), 1):
+            trade_label = f"{idx}. {row['Trade']}"
+            defect_count = f"{row['DefectCount']} defects"
+            worksheet.write(current_row, 0, trade_label, trade_rank_format)
+            worksheet.write(current_row, 1, defect_count, trade_count_format)
+            current_row += 1
+        
+        current_row += 2  # Add more spacing before footer
+        
+        # === FOOTER ===
+        worksheet.write(current_row, 0, 'Report Generated', label_format)
+        report_time = datetime.now().strftime('%m/%d/%Y, %I:%M:%S %p')
+        worksheet.write(current_row, 1, report_time, footer_format)
+        
+        # Add other detailed data sheets with proper formatting
+        # All Inspections Sheet
         final_df.to_excel(writer, sheet_name="📋 All Inspections", index=False)
         ws_all = writer.sheets["📋 All Inspections"]
+        
+        # Create header format for data sheets
+        data_header_format = workbook.add_format({
+            'bold': True, 'bg_color': '#2E7D32', 'font_color': 'white',
+            'border': 1, 'align': 'center', 'font_size': 11
+        })
+        
         for col_num, value in enumerate(final_df.columns.values):
-            ws_all.write(0, col_num, value, header_format)
+            ws_all.write(0, col_num, value, data_header_format)
+        
+        # Auto-adjust column widths
+        for i, col in enumerate(final_df.columns):
+            max_len = max(final_df[col].astype(str).str.len().max(), len(str(col))) + 2
+            ws_all.set_column(i, i, min(max_len, 50))
         
         # Defects Only Sheet
         if len(metrics['defects_only']) > 0:
             metrics['defects_only'].to_excel(writer, sheet_name="🔍 Defects Only", index=False)
             ws_defects = writer.sheets["🔍 Defects Only"]
             for col_num, value in enumerate(metrics['defects_only'].columns.values):
-                ws_defects.write(0, col_num, value, header_format)
+                ws_defects.write(0, col_num, value, data_header_format)
+            
+            # Auto-adjust column widths
+            for i, col in enumerate(metrics['defects_only'].columns):
+                max_len = max(metrics['defects_only'][col].astype(str).str.len().max(), len(str(col))) + 2
+                ws_defects.set_column(i, i, min(max_len, 50))
         
         # Trade Specific Summary Sheet
         if len(metrics['trade_specific_summary']) > 0:
             metrics['trade_specific_summary'].to_excel(writer, sheet_name="🔧 Trade Specific Summary", index=False)
             ws_trade = writer.sheets["🔧 Trade Specific Summary"]
             for col_num, value in enumerate(metrics['trade_specific_summary'].columns.values):
-                ws_trade.write(0, col_num, value, header_format)
+                ws_trade.write(0, col_num, value, data_header_format)
+            
+            # Auto-adjust column widths
+            for i, col in enumerate(metrics['trade_specific_summary'].columns):
+                if col == 'Top_Components' or col == 'Top_Rooms':
+                    ws_trade.set_column(i, i, 40)
+                else:
+                    max_len = max(len(str(col)), 15) + 2
+                    ws_trade.set_column(i, i, max_len)
         
         # Component Details Summary Sheet
         if len(metrics['component_details_summary']) > 0:
             metrics['component_details_summary'].to_excel(writer, sheet_name="🔍 Component Details", index=False)
             ws_component = writer.sheets["🔍 Component Details"]
             for col_num, value in enumerate(metrics['component_details_summary'].columns.values):
-                ws_component.write(0, col_num, value, header_format)
+                ws_component.write(0, col_num, value, data_header_format)
             
             # Set column widths
             ws_component.set_column('A:A', 18)  # Trade
@@ -711,30 +969,37 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
                     summary_data.to_excel(writer, sheet_name=sheet_name, index=False)
                     ws = writer.sheets[sheet_name]
                     for col_num, value in enumerate(summary_data.columns.values):
-                        ws.write(0, col_num, value, header_format)
+                        ws.write(0, col_num, value, data_header_format)
+                    
+                    # Auto-adjust column widths
+                    for i, col in enumerate(summary_data.columns):
+                        max_len = max(summary_data[col].astype(str).str.len().max(), len(str(col))) + 2
+                        ws.set_column(i, i, min(max_len, 40))
     
     excel_buffer.seek(0)
     return excel_buffer
 
 def display_comprehensive_results(metrics, excel_buffer, original_filename):
-    """Display comprehensive processing results"""
+    """Display comprehensive processing results with enhanced visual design"""
     
     st.markdown("---")
     st.markdown("## 🎉 Processing Complete!")
     
-    # Success message
+    # Success message with enhanced styling
     st.markdown(f"""
     <div class="success-message">
         <h3>✅ Inspection Report Generated Successfully!</h3>
         <p><strong>🏢 Building:</strong> {metrics['building_name']}</p>
         <p><strong>📅 Inspection Date:</strong> {metrics['inspection_date']}</p>
+        <p><strong>📍 Address:</strong> {metrics['address']}</p>
         <p><strong>📄 Source File:</strong> {original_filename}</p>
         <p><strong>⏰ Processing Time:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Key metrics
-    st.markdown("### 📊 Key Metrics")
+    # Key metrics section with enhanced cards
+    st.markdown('<div class="section-header">📊 Key Inspection Metrics</div>', unsafe_allow_html=True)
+    
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
@@ -769,51 +1034,125 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
         </div>
         """, unsafe_allow_html=True)
     
+    # Settlement Readiness section
+    st.markdown('<div class="section-header">🏠 Settlement Readiness Overview</div>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="readiness-card ready">
+            ✅ Ready (0-2 defects): {metrics['ready_units']} units ({metrics['ready_pct']:.1f}%)
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div class="readiness-card minor">
+            ⚠️ Minor work (3-7 defects): {metrics['minor_work_units']} units ({metrics['minor_pct']:.1f}%)
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="readiness-card major">
+            🔧 Major work (8-15 defects): {metrics['major_work_units']} units ({metrics['major_pct']:.1f}%)
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div class="readiness-card extensive">
+            🚧 Extensive work (15+ defects): {metrics['extensive_work_units']} units ({metrics['extensive_pct']:.1f}%)
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Top Problem Trades section
+    st.markdown('<div class="section-header">⚠️ Top Problem Trades</div>', unsafe_allow_html=True)
+    
+    if len(metrics['summary_trade']) > 0:
+        top_5_trades = metrics['summary_trade'].head(5)
+        
+        for idx, (_, row) in enumerate(top_5_trades.iterrows(), 1):
+            st.markdown(f"""
+            <div class="trade-item">
+                <strong>{idx}. {row['Trade']}</strong> - {row['DefectCount']} defects
+            </div>
+            """, unsafe_allow_html=True)
+    
     # Component Details Preview
     if len(metrics['component_details_summary']) > 0:
-        st.markdown("### 🔍 Component Details Analysis")
+        st.markdown('<div class="section-header">🔍 Component Details Analysis</div>', unsafe_allow_html=True)
         
-        top_components = metrics['component_details_summary'].head(10)
-        
-        st.markdown("#### Top 10 Most Problematic Components")
-        st.dataframe(
-            top_components,
-            use_container_width=True,
-            column_config={
-                "Trade": st.column_config.TextColumn("Trade", width="medium"),
-                "Room": st.column_config.TextColumn("Room", width="medium"),
-                "Component": st.column_config.TextColumn("Component", width="large"),
-                "Units with Defects": st.column_config.TextColumn("Units with Defects", width="x-large")
-            }
-        )
+        with st.expander("📋 View Top 15 Most Problematic Components", expanded=False):
+            top_components = metrics['component_details_summary'].head(15)
+            
+            st.dataframe(
+                top_components,
+                use_container_width=True,
+                column_config={
+                    "Trade": st.column_config.TextColumn("Trade", width="medium"),
+                    "Room": st.column_config.TextColumn("Room", width="medium"),
+                    "Component": st.column_config.TextColumn("Component", width="large"),
+                    "Units with Defects": st.column_config.TextColumn("Units with Defects", width="x-large")
+                }
+            )
+            
+            if len(metrics['component_details_summary']) > 15:
+                st.info(f"Showing top 15 of {len(metrics['component_details_summary'])} total component issues")
     
     # Download section
-    st.markdown("### 📥 Download Your Report")
+    st.markdown('<div class="section-header">📥 Download Your Professional Report</div>', unsafe_allow_html=True)
     
     filename = f"{metrics['building_name'].replace(' ', '_')}_Inspection_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     
-    st.download_button(
-        label="📊 Download Complete Excel Report",
-        data=excel_buffer,
-        file_name=filename,
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True
-    )
+    col1, col2 = st.columns([2, 1])
     
-    # Report contents
-    st.markdown("#### 📋 What's in Your Report:")
+    with col1:
+        st.download_button(
+            label="📊 Download Complete Excel Report",
+            data=excel_buffer,
+            file_name=filename,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+    
+    with col2:
+        st.markdown(f"""
+        <div class="info-card">
+            <strong>📁 File Size:</strong> {len(excel_buffer.getvalue()) / 1024:.1f} KB<br>
+            <strong>📄 Sheets:</strong> 8+ comprehensive tabs<br>
+            <strong>📊 Format:</strong> Professional Excel Report
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Report contents with enhanced styling
+    st.markdown("#### 📋 What's included in your comprehensive report:")
+    
+    report_contents = [
+        ("📊 Executive Dashboard", "Professional summary matching your image with building info, inspection summary, settlement readiness, and top problem trades"),
+        ("📋 All Inspections", "Complete detailed inspection data for all units"),
+        ("🔍 Defects Only", "Filtered view showing only items with issues"),
+        ("🔧 Trade Specific Summary", "Comprehensive trade analysis with priorities and affected units"),
+        ("🔍 Component Details", "Shows which specific units have defects for each component"),
+        ("📊 By Trade", "Defects grouped by trade category"),
+        ("🏠 By Unit", "Unit-specific defect summaries"),
+        ("🚪 By Room", "Room-specific analysis")
+    ]
+    
+    for title, description in report_contents:
+        st.markdown(f"""
+        <div class="trade-item">
+            <strong>{title}</strong><br>
+            <small style="color: #666;">{description}</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Final success message
     st.markdown("""
-    - **📊 Executive Dashboard** - Key metrics and visual summary
-    - **📋 All Inspections** - Complete detailed data
-    - **🔍 Defects Only** - Filtered view of issues found
-    - **🔧 Trade Specific Summary** - Comprehensive trade analysis with priorities
-    - **🔍 Component Details** - Shows which specific units have defects for each component
-    - **📊 By Trade** - Defects grouped by trade category
-    - **🏠 By Unit** - Unit-specific defect summaries
-    - **🚪 By Room** - Room-specific analysis
-    """)
-    
-    st.success("🎉 Your professional inspection report is ready!")
+    <div style="text-align: center; margin: 2rem 0;">
+        <h3 style="color: #4CAF50;">🎉 Your professional inspection report is ready!</h3>
+        <p style="color: #666; font-size: 1.1rem;">The Excel file includes a beautifully formatted Executive Dashboard that matches industry standards.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 def process_inspection_file(uploaded_file, trade_mapping, include_charts, detailed_breakdown, executive_summary, notification_email):
     """Process the inspection file"""
