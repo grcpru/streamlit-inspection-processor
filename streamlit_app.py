@@ -304,6 +304,31 @@ def get_available_trades():
         "Appliances"
     ]
 
+def generate_component_details_summary(defects_only):
+    """Generate detailed component analysis showing which units have defects for each Trade/Room/Component"""
+    
+    if len(defects_only) == 0:
+        return pd.DataFrame(columns=['Trade', 'Room', 'Component', 'Units with Defects'])
+    
+    # Group by Trade, Room, Component and get list of units with defects
+    component_details = defects_only.groupby(['Trade', 'Room', 'Component'])['Unit'].apply(
+        lambda x: ', '.join(sorted(x.astype(str).unique()))
+    ).reset_index()
+    
+    # Rename column to match your example
+    component_details.rename(columns={'Unit': 'Units with Defects'}, inplace=True)
+    
+    # Sort by Trade, then by number of units (descending)
+    component_details['Unit_Count'] = component_details['Units with Defects'].apply(
+        lambda x: len(x.split(', ')) if x else 0
+    )
+    component_details = component_details.sort_values(['Trade', 'Unit_Count'], ascending=[True, False])
+    
+    # Remove the temporary count column
+    component_details = component_details[['Trade', 'Room', 'Component', 'Units with Defects']]
+    
+    return component_details
+
 def process_inspection_data(df, trade_mapping):
     """Process inspection data using enhanced logic"""
     
@@ -495,8 +520,8 @@ def calculate_comprehensive_metrics(final_df, df):
         "summary_unit_trade": summary_unit_trade,
         "summary_room_comp": summary_room_comp,
         "defects_only": defects_only,
-        "trade_specific_summary": trade_specific_summary,  # NEW
-        "component_details_summary": component_details_summary  # NEW
+        "trade_specific_summary": trade_specific_summary,
+        "component_details_summary": component_details_summary
     }
 
 def generate_trade_specific_summary(final_df, defects_only, total_units):
@@ -586,11 +611,6 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
         problem_trades_header = workbook.add_format({
             'bold': True, 'font_size': 14, 'bg_color': '#7B1FA2', 'font_color': 'white',
             'align': 'center', 'valign': 'vcenter', 'border': 2, 'border_color': '#4A148C'
-        })
-        
-        trade_specific_header = workbook.add_format({
-            'bold': True, 'font_size': 14, 'bg_color': '#D32F2F', 'font_color': 'white',
-            'align': 'center', 'valign': 'vcenter', 'border': 2, 'border_color': '#B71C1C'
         })
         
         label_format = workbook.add_format({
@@ -738,7 +758,7 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
             for col_num, value in enumerate(metrics['defects_only'].columns.values):
                 ws_defects.write(0, col_num, value, header_format)
         
-        # NEW: Trade Specific Summary Sheet - This was missing!
+        # NEW: Trade Specific Summary Sheet
         if len(metrics['trade_specific_summary']) > 0:
             metrics['trade_specific_summary'].to_excel(writer, sheet_name="🔧 Trade Specific Summary", index=False)
             ws_trade_summary = writer.sheets["🔧 Trade Specific Summary"]
@@ -963,27 +983,6 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
                     📊 {defect_count} defects ({defect_rate:.1f}% rate) • 
                     🏠 {units_affected} units affected
                 </small>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # Top problem trades (existing)
-    if len(metrics['summary_trade']) > 0:
-        st.markdown("### ⚠️ Top Problem Trades (Quick View)")
-        
-        for i, (_, row) in enumerate(metrics['summary_trade'].head(5).iterrows(), 1):
-            trade_name = row['Trade'] if pd.notna(row['Trade']) else 'Unknown Trade'
-            defect_count = row['DefectCount']
-            
-            # Color coding based on ranking
-            colors = ["#ff4444", "#ff8800", "#ffcc00", "#88cc00", "#44cc44"]
-            color = colors[min(i-1, len(colors)-1)]
-            
-            st.markdown(f"""
-            <div class="trade-item" style="border-left-color: {color};">
-                <strong>{i}. {trade_name}</strong>
-                <span style="float: right; background: {color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.9em;">
-                    {defect_count} defects
-                </span>
             </div>
             """, unsafe_allow_html=True)
     
