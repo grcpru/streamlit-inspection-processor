@@ -141,43 +141,6 @@ st.markdown("""
         margin: 1rem 0;
         box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
     }
-    .warning-card {
-        background: linear-gradient(135deg, #fff3e0, #ffcc02);
-        padding: 1.5rem;
-        border-radius: 12px;
-        border-left: 5px solid #ff9800;
-        margin: 1rem 0;
-        box-shadow: 0 2px 8px rgba(255, 152, 0, 0.1);
-    }
-    .stButton > button {
-        background: linear-gradient(135deg, #4CAF50, #45a049);
-        color: white;
-        border-radius: 10px;
-        border: none;
-        padding: 0.8rem 2rem;
-        font-weight: 600;
-        font-size: 1.1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-    }
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-    }
-    .upload-section {
-        background: linear-gradient(135deg, #f8f9fa, #ffffff);
-        padding: 2rem;
-        border-radius: 15px;
-        border: 2px dashed #dee2e6;
-        margin: 1.5rem 0;
-        text-align: center;
-    }
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin: 2rem 0;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -232,187 +195,25 @@ Bedroom,Skirting,Carpentry & Joinery
 Bedroom,Walls,Painting
 Bedroom,Wardrobe,Carpentry & Joinery
 Bedroom,Windows,Windows
-Bedroom 1,Carpets,Flooring - Carpets
-Bedroom 1,Ceiling,Painting
-Bedroom 1,Doors,Doors
-Bedroom 1,GPO,Electrical
-Bedroom 1,Light Fixtures,Electrical
-Bedroom 1,Skirting,Carpentry & Joinery
-Bedroom 1,Walls,Painting
-Bedroom 1,Wardrobe,Carpentry & Joinery
-Bedroom 1,Windows,Windows
-Bedroom 1 w/Ensuite,Bathtub (if applicable),Plumbing
-Bedroom 1 w/Ensuite,Carpets,Flooring - Carpets
-Bedroom 1 w/Ensuite,Ceiling,Painting
-Bedroom 1 w/Ensuite,Doors,Doors
-Bedroom 1 w/Ensuite,Exhaust Fan,Electrical
-Bedroom 1 w/Ensuite,GPO,Electrical
-Bedroom 1 w/Ensuite,Light Fixtures,Electrical
-Bedroom 1 w/Ensuite,Mirror,Carpentry & Joinery
-Bedroom 1 w/Ensuite,Shower,Plumbing
-Bedroom 1 w/Ensuite,Sink,Plumbing
-Bedroom 1 w/Ensuite,Skirting,Carpentry & Joinery
-Bedroom 1 w/Ensuite,Tiles,Flooring - Tiles
-Bedroom 1 w/Ensuite,Toilet,Plumbing
-Bedroom 1 w/Ensuite,Walls,Painting
-Bedroom 1 w/Ensuite,Wardrobe,Carpentry & Joinery
-Bedroom 1 w/Ensuite,Windows,Windows
-Bedroom 2,Carpets,Flooring - Carpets
-Bedroom 2,Ceiling,Painting
-Bedroom 2,Doors,Doors
-Bedroom 2,GPO,Electrical
-Bedroom 2,Light Fixtures,Electrical
-Bedroom 2,Skirting,Carpentry & Joinery
-Bedroom 2,Walls,Painting
-Bedroom 2,Wardrobe,Carpentry & Joinery
-Bedroom 2,Windows,Windows
-Bedroom 2 w/Ensuite,Bathtub (if applicable),Plumbing
-Bedroom 2 w/Ensuite,Carpets,Flooring - Carpets
-Bedroom 2 w/Ensuite,Ceiling,Painting
-Bedroom 2 w/Ensuite,Doors,Doors
-Bedroom 2 w/Ensuite,Exhaust Fan,Electrical
-Bedroom 2 w/Ensuite,GPO,Electrical
-Bedroom 2 w/Ensuite,Light Fixtures,Electrical
-Bedroom 2 w/Ensuite,Mirror,Carpentry & Joinery
-Bedroom 2 w/Ensuite,Shower,Plumbing
-Bedroom 2 w/Ensuite,Sink,Plumbing
-Bedroom 2 w/Ensuite,Skirting,Carpentry & Joinery
-Bedroom 2 w/Ensuite,Tiles,Flooring - Tiles
-Bedroom 2 w/Ensuite,Toilet,Plumbing
-Bedroom 2 w/Ensuite,Walls,Painting
-Bedroom 2 w/Ensuite,Wardrobe,Carpentry & Joinery
-Bedroom 2 w/Ensuite,Windows,Windows
-Bedroom 3,Carpets,Flooring - Carpets
-Bedroom 3,Ceiling,Painting
-Bedroom 3,Doors,Doors
-Bedroom 3,GPO,Electrical
-Bedroom 3,Light Fixtures,Electrical
-Bedroom 3,Skirting,Carpentry & Joinery
-Bedroom 3,Walls,Painting
-Bedroom 3,Wardrobe,Carpentry & Joinery
-Bedroom 3,Windows,Windows
-Bedroom w/Ensuite,Bathtub (if applicable),Plumbing
-Bedroom w/Ensuite,Carpets,Flooring - Carpets
-Bedroom w/Ensuite,Ceiling,Painting
-Bedroom w/Ensuite,Doors,Doors
-Bedroom w/Ensuite,Exhaust Fan,Electrical
-Bedroom w/Ensuite,GPO,Electrical
-Bedroom w/Ensuite,Light Fixtures,Electrical
-Bedroom w/Ensuite,Mirror,Carpentry & Joinery
-Bedroom w/Ensuite,Shower,Plumbing
-Bedroom w/Ensuite,Sink,Plumbing
-Bedroom w/Ensuite,Skirting,Carpentry & Joinery
-Bedroom w/Ensuite,Tiles,Flooring - Tiles
-Bedroom w/Ensuite,Toilet,Plumbing
-Bedroom w/Ensuite,Walls,Painting
-Bedroom w/Ensuite,Wardrobe,Carpentry & Joinery
-Bedroom w/Ensuite,Windows,Windows
-Butler's Pantry,Cabinets/Shelving,Carpentry & Joinery
-Butler's Pantry,Ceiling,Painting
-Butler's Pantry,Flooring,Flooring - Timber
-Butler's Pantry,GPO,Electrical
-Butler's Pantry,Light Fixtures,Electrical
-Butler's Pantry,Sink,Plumbing
-Butler's Pantry (if applicable),Cabinets/Shelving,Carpentry & Joinery
-Butler's Pantry (if applicable),Ceiling,Painting
-Butler's Pantry (if applicable),Flooring,Flooring - Timber
-Butler's Pantry (if applicable),GPO,Electrical
-Butler's Pantry (if applicable),Light Fixtures,Electrical
-Butler's Pantry (if applicable),Sink,Plumbing
-Corridor,Ceiling,Painting
-Corridor,Flooring,Flooring - Timber
-Corridor,Intercom,Electrical
-Corridor,Light Fixtures,Electrical
-Corridor,Skirting,Carpentry & Joinery
-Corridor,Walls,Painting
-Dining & Living Room Area,Ceiling,Painting
-Dining & Living Room Area,Flooring,Flooring - Timber
-Dining & Living Room Area,GPO,Electrical
-Dining & Living Room Area,Light Fixtures,Electrical
-Dining & Living Room Area,Skirting,Carpentry & Joinery
-Dining & Living Room Area,Walls,Painting
-Dining & Living Room Area,Windows (if applicable),Windows
-Downstairs Bathroom,Ceiling,Painting
-Downstairs Bathroom,Doors,Doors
-Downstairs Bathroom,Exhaust Fan,Electrical
-Downstairs Bathroom,GPO,Electrical
-Downstairs Bathroom,Light Fixtures,Electrical
-Downstairs Bathroom,Mirror,Carpentry & Joinery
-Downstairs Bathroom,Shower,Plumbing
-Downstairs Bathroom,Sink,Plumbing
-Downstairs Bathroom,Skirting,Carpentry & Joinery
-Downstairs Bathroom,Tiles,Flooring - Tiles
-Downstairs Bathroom,Toilet,Plumbing
-Downstairs Bathroom,Walls,Painting
-Downstairs Toilet (if applicable),Ceiling,Painting
-Downstairs Toilet (if applicable),Doors,Doors
-Downstairs Toilet (if applicable),Exhaust Fan,Electrical
-Downstairs Toilet (if applicable),Light Fixtures,Electrical
-Downstairs Toilet (if applicable),Sink,Plumbing
-Downstairs Toilet (if applicable),Skirting,Carpentry & Joinery
-Downstairs Toilet (if applicable),Tiles,Flooring - Tiles
-Downstairs Toilet (if applicable),Toilet,Plumbing
-Downstairs Toilet (if applicable),Walls,Painting
 Kitchen Area,Cabinets,Carpentry & Joinery
 Kitchen Area,Ceiling,Painting
 Kitchen Area,Dishwasher,Plumbing
-Kitchen Area,Dishwasher (if applicable),Plumbing
 Kitchen Area,Flooring,Flooring - Timber
 Kitchen Area,GPO,Electrical
 Kitchen Area,Kitchen Sink,Plumbing
-Kitchen Area,Kitchen Table Tops,Carpentry & Joinery
 Kitchen Area,Light Fixtures,Electrical
 Kitchen Area,Rangehood,Appliances
-Kitchen Area,Splashbacks,Painting
 Kitchen Area,Stovetop and Oven,Appliances
-Laundry Room,Windows (if applicable),Windows
-Laundry Section,Cold/Hot Water Outlets,Plumbing
-Laundry Section,Doors,Doors
-Laundry Section,Drainage,Plumbing
-Laundry Section,Exhaust Fan,Electrical
-Laundry Section,GPO,Electrical
-Laundry Section,Laundry Sink,Plumbing
-Laundry Section,Light Fixtures,Electrical
-Laundry Section,Skirting,Carpentry & Joinery
-Laundry Section,Tiles,Flooring - Tiles
-Laundry Section,Walls,Painting
-Staircase,Ceiling,Painting
-Staircase,Light Fixtures,Electrical
-Staircase,Railing (if applicable),Carpentry & Joinery
-Staircase,Skirting,Carpentry & Joinery
-Staircase,Staircase,Carpentry & Joinery
-Staircase,Walls,Painting
-Study Area (if applicable),Desk,Carpentry & Joinery
-Study Area (if applicable),GPO,Electrical
-Study Area (if applicable),Light Fixtures,Electrical
-Study Area (if applicable),Skirting,Carpentry & Joinery
-Study Area (if applicable),Walls,Painting
-Upstair Corridor,Ceiling,Painting
-Upstair Corridor,Flooring,Flooring - Timber
-Upstair Corridor,Light Fixtures,Electrical
-Upstair Corridor,Skirting,Carpentry & Joinery
-Upstair Corridor,Walls,Painting
-Upstairs Bathroom,Bathtub (if applicable),Plumbing
-Upstairs Bathroom,Ceiling,Painting
-Upstairs Bathroom,Doors,Doors
-Upstairs Bathroom,Exhaust Fan,Electrical
-Upstairs Bathroom,GPO,Electrical
-Upstairs Bathroom,Light Fixtures,Electrical
-Upstairs Bathroom,Mirror,Carpentry & Joinery
-Upstairs Bathroom,Shower,Plumbing
-Upstairs Bathroom,Sink,Plumbing
-Upstairs Bathroom,Skirting,Carpentry & Joinery
-Upstairs Bathroom,Tiles,Flooring - Tiles
-Upstairs Bathroom,Toilet,Plumbing
-Upstairs Bathroom,Walls,Painting
-Laundry Room,Cold/Hot Water Outlets,Plumbing
+Living Room,Ceiling,Painting
+Living Room,Flooring,Flooring - Timber
+Living Room,GPO,Electrical
+Living Room,Light Fixtures,Electrical
+Living Room,Walls,Painting
+Living Room,Windows,Windows
 Laundry Room,Doors,Doors
-Laundry Room,Drainage,Plumbing
-Laundry Room,Exhaust Fan,Electrical
 Laundry Room,GPO,Electrical
 Laundry Room,Laundry Sink,Plumbing
 Laundry Room,Light Fixtures,Electrical
-Laundry Room,Skirting,Carpentry & Joinery
 Laundry Room,Tiles,Flooring - Tiles
 Laundry Room,Walls,Painting"""
     
@@ -717,63 +518,55 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
         workbook = writer.book
         
         # Define comprehensive formats matching the image style
-        # Building Information Header (Green)
         building_header = workbook.add_format({
             'bold': True, 'font_size': 16, 'bg_color': '#4CAF50', 'font_color': 'white',
             'align': 'center', 'valign': 'vcenter', 'border': 2
         })
         
-        # Inspection Summary Header (Blue)
         inspection_header = workbook.add_format({
             'bold': True, 'font_size': 16, 'bg_color': '#2196F3', 'font_color': 'white',
             'align': 'center', 'valign': 'vcenter', 'border': 2
         })
         
-        # Settlement Readiness Header (Orange)
         settlement_header = workbook.add_format({
             'bold': True, 'font_size': 16, 'bg_color': '#FF9800', 'font_color': 'white',
             'align': 'center', 'valign': 'vcenter', 'border': 2
         })
         
-        # Top Problem Trades Header (Purple)
         trades_header = workbook.add_format({
             'bold': True, 'font_size': 16, 'bg_color': '#9C27B0', 'font_color': 'white',
             'align': 'center', 'valign': 'vcenter', 'border': 2
         })
         
-        # Label formats
         label_format = workbook.add_format({
             'bold': True, 'font_size': 12, 'bg_color': '#E8E8E8', 'border': 1,
             'align': 'left', 'valign': 'vcenter'
         })
         
-        # Data formats
         data_format = workbook.add_format({
             'font_size': 12, 'border': 1, 'align': 'right', 'valign': 'vcenter'
         })
         
-        # Special data formats for readiness categories
         ready_format = workbook.add_format({
             'font_size': 12, 'border': 1, 'align': 'right', 'valign': 'vcenter',
-            'bg_color': '#C8E6C9'  # Light green
+            'bg_color': '#C8E6C9'
         })
         
         minor_format = workbook.add_format({
             'font_size': 12, 'border': 1, 'align': 'right', 'valign': 'vcenter',
-            'bg_color': '#FFF3C4'  # Light yellow
+            'bg_color': '#FFF3C4'
         })
         
         major_format = workbook.add_format({
             'font_size': 12, 'border': 1, 'align': 'right', 'valign': 'vcenter',
-            'bg_color': '#FFCDD2'  # Light red
+            'bg_color': '#FFCDD2'
         })
         
         extensive_format = workbook.add_format({
             'font_size': 12, 'border': 1, 'align': 'right', 'valign': 'vcenter',
-            'bg_color': '#F8BBD9'  # Light pink
+            'bg_color': '#F8BBD9'
         })
         
-        # Trade ranking formats
         trade_rank_format = workbook.add_format({
             'bold': True, 'font_size': 11, 'bg_color': '#F3E5F5', 'border': 1,
             'align': 'left', 'valign': 'vcenter'
@@ -784,7 +577,6 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
             'bg_color': '#F3E5F5'
         })
         
-        # Footer format
         footer_format = workbook.add_format({
             'font_size': 10, 'border': 1, 'align': 'right', 'valign': 'vcenter',
             'italic': True, 'bg_color': '#F5F5F5'
@@ -797,9 +589,9 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
         
         current_row = 0
         
-        # === BUILDING INFORMATION SECTION ===
+        # Building Information Section
         worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '🏢 BUILDING INFORMATION', building_header)
-        worksheet.set_row(current_row, 25)  # Make header row taller
+        worksheet.set_row(current_row, 25)
         current_row += 2
         
         building_data = [
@@ -815,9 +607,9 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
             worksheet.write(current_row, 1, value, data_format)
             current_row += 1
         
-        current_row += 1  # Add spacing
+        current_row += 1
         
-        # === INSPECTION SUMMARY SECTION ===
+        # Inspection Summary Section
         worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '📋 INSPECTION SUMMARY', inspection_header)
         worksheet.set_row(current_row, 25)
         current_row += 2
@@ -834,14 +626,13 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
             worksheet.write(current_row, 1, value, data_format)
             current_row += 1
         
-        current_row += 1  # Add spacing
+        current_row += 1
         
-        # === SETTLEMENT READINESS SECTION ===
+        # Settlement Readiness Section
         worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '🏠 SETTLEMENT READINESS', settlement_header)
         worksheet.set_row(current_row, 25)
         current_row += 2
         
-        # Settlement readiness data with different colors
         readiness_data = [
             ('✅ Ready (0-2 defects)', f"{metrics['ready_units']} units ({metrics['ready_pct']:.1f}%)", ready_format),
             ('⚠️ Minor work (3-7 defects)', f"{metrics['minor_work_units']} units ({metrics['minor_pct']:.1f}%)", minor_format),
@@ -854,14 +645,13 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
             worksheet.write(current_row, 1, value, cell_format)
             current_row += 1
         
-        current_row += 1  # Add spacing
+        current_row += 1
         
-        # === TOP PROBLEM TRADES SECTION ===
+        # Top Problem Trades Section
         worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '⚠️ TOP PROBLEM TRADES', trades_header)
         worksheet.set_row(current_row, 25)
         current_row += 2
         
-        # Get top 5 trades by defect count
         top_trades = metrics['summary_trade'].head(5)
         
         for idx, (_, row) in enumerate(top_trades.iterrows(), 1):
@@ -871,19 +661,17 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
             worksheet.write(current_row, 1, defect_count, trade_count_format)
             current_row += 1
         
-        current_row += 2  # Add more spacing before footer
+        current_row += 2
         
-        # === FOOTER ===
+        # Footer
         worksheet.write(current_row, 0, 'Report Generated', label_format)
         report_time = datetime.now().strftime('%m/%d/%Y, %I:%M:%S %p')
         worksheet.write(current_row, 1, report_time, footer_format)
         
-        # Add other detailed data sheets with proper formatting
-        # All Inspections Sheet
+        # Add other data sheets
         final_df.to_excel(writer, sheet_name="📋 All Inspections", index=False)
         ws_all = writer.sheets["📋 All Inspections"]
         
-        # Create header format for data sheets
         data_header_format = workbook.add_format({
             'bold': True, 'bg_color': '#2E7D32', 'font_color': 'white',
             'border': 1, 'align': 'center', 'font_size': 11
@@ -892,22 +680,12 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
         for col_num, value in enumerate(final_df.columns.values):
             ws_all.write(0, col_num, value, data_header_format)
         
-        # Auto-adjust column widths
-        for i, col in enumerate(final_df.columns):
-            max_len = max(final_df[col].astype(str).str.len().max(), len(str(col))) + 2
-            ws_all.set_column(i, i, min(max_len, 50))
-        
         # Defects Only Sheet
         if len(metrics['defects_only']) > 0:
             metrics['defects_only'].to_excel(writer, sheet_name="🔍 Defects Only", index=False)
             ws_defects = writer.sheets["🔍 Defects Only"]
             for col_num, value in enumerate(metrics['defects_only'].columns.values):
                 ws_defects.write(0, col_num, value, data_header_format)
-            
-            # Auto-adjust column widths
-            for i, col in enumerate(metrics['defects_only'].columns):
-                max_len = max(metrics['defects_only'][col].astype(str).str.len().max(), len(str(col))) + 2
-                ws_defects.set_column(i, i, min(max_len, 50))
         
         # Trade Specific Summary Sheet
         if len(metrics['trade_specific_summary']) > 0:
@@ -915,14 +693,6 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
             ws_trade = writer.sheets["🔧 Trade Specific Summary"]
             for col_num, value in enumerate(metrics['trade_specific_summary'].columns.values):
                 ws_trade.write(0, col_num, value, data_header_format)
-            
-            # Auto-adjust column widths
-            for i, col in enumerate(metrics['trade_specific_summary'].columns):
-                if col == 'Top_Components' or col == 'Top_Rooms':
-                    ws_trade.set_column(i, i, 40)
-                else:
-                    max_len = max(len(str(col)), 15) + 2
-                    ws_trade.set_column(i, i, max_len)
         
         # Component Details Summary Sheet
         if len(metrics['component_details_summary']) > 0:
@@ -930,14 +700,8 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
             ws_component = writer.sheets["🔍 Component Details"]
             for col_num, value in enumerate(metrics['component_details_summary'].columns.values):
                 ws_component.write(0, col_num, value, data_header_format)
-            
-            # Set column widths
-            ws_component.set_column('A:A', 18)  # Trade
-            ws_component.set_column('B:B', 25)  # Room
-            ws_component.set_column('C:C', 30)  # Component
-            ws_component.set_column('D:D', 50)  # Units with Defects
         
-        # Summary sheets if requested
+        # Summary sheets
         if detailed_breakdown:
             summary_sheets = [
                 (metrics['summary_trade'], "📊 By Trade"),
@@ -951,22 +715,17 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
                     ws = writer.sheets[sheet_name]
                     for col_num, value in enumerate(summary_data.columns.values):
                         ws.write(0, col_num, value, data_header_format)
-                    
-                    # Auto-adjust column widths
-                    for i, col in enumerate(summary_data.columns):
-                        max_len = max(summary_data[col].astype(str).str.len().max(), len(str(col))) + 2
-                        ws.set_column(i, i, min(max_len, 40))
     
     excel_buffer.seek(0)
     return excel_buffer
 
 def display_comprehensive_results(metrics, excel_buffer, original_filename):
-    """Display comprehensive processing results with enhanced visual design"""
+    """Display comprehensive processing results"""
     
     st.markdown("---")
     st.markdown("## 🎉 Processing Complete!")
     
-    # Success message with enhanced styling
+    # Success message
     st.markdown(f"""
     <div class="success-message">
         <h3>✅ Inspection Report Generated Successfully!</h3>
@@ -978,7 +737,7 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
     </div>
     """, unsafe_allow_html=True)
     
-    # Key metrics section with enhanced cards
+    # Key metrics
     st.markdown('<div class="section-header">📊 Key Inspection Metrics</div>', unsafe_allow_html=True)
     
     col1, col2, col3, col4 = st.columns(4)
@@ -1015,7 +774,7 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
         </div>
         """, unsafe_allow_html=True)
     
-    # Settlement Readiness section
+    # Settlement Readiness
     st.markdown('<div class="section-header">🏠 Settlement Readiness Overview</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
@@ -1046,7 +805,7 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
         </div>
         """, unsafe_allow_html=True)
     
-    # Top Problem Trades section
+    # Top Problem Trades
     st.markdown('<div class="section-header">⚠️ Top Problem Trades</div>', unsafe_allow_html=True)
     
     if len(metrics['summary_trade']) > 0:
@@ -1059,81 +818,20 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
             </div>
             """, unsafe_allow_html=True)
     
-    # Component Details Preview
-    if len(metrics['component_details_summary']) > 0:
-        st.markdown('<div class="section-header">🔍 Component Details Analysis</div>', unsafe_allow_html=True)
-        
-        with st.expander("📋 View Top 15 Most Problematic Components", expanded=False):
-            top_components = metrics['component_details_summary'].head(15)
-            
-            st.dataframe(
-                top_components,
-                use_container_width=True,
-                column_config={
-                    "Trade": st.column_config.TextColumn("Trade", width="medium"),
-                    "Room": st.column_config.TextColumn("Room", width="medium"),
-                    "Component": st.column_config.TextColumn("Component", width="large"),
-                    "Units with Defects": st.column_config.TextColumn("Units with Defects", width="x-large")
-                }
-            )
-            
-            if len(metrics['component_details_summary']) > 15:
-                st.info(f"Showing top 15 of {len(metrics['component_details_summary'])} total component issues")
-    
     # Download section
     st.markdown('<div class="section-header">📥 Download Your Professional Report</div>', unsafe_allow_html=True)
     
     filename = f"{metrics['building_name'].replace(' ', '_')}_Inspection_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     
-    col1, col2 = st.columns([2, 1])
+    st.download_button(
+        label="📊 Download Complete Excel Report",
+        data=excel_buffer,
+        file_name=filename,
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True
+    )
     
-    with col1:
-        st.download_button(
-            label="📊 Download Complete Excel Report",
-            data=excel_buffer,
-            file_name=filename,
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
-    
-    with col2:
-        st.markdown(f"""
-        <div class="info-card">
-            <strong>📁 File Size:</strong> {len(excel_buffer.getvalue()) / 1024:.1f} KB<br>
-            <strong>📄 Sheets:</strong> 8+ comprehensive tabs<br>
-            <strong>📊 Format:</strong> Professional Excel Report
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Report contents with enhanced styling
-    st.markdown("#### 📋 What's included in your comprehensive report:")
-    
-    report_contents = [
-        ("📊 Executive Dashboard", "Professional summary matching your image with building info, inspection summary, settlement readiness, and top problem trades"),
-        ("📋 All Inspections", "Complete detailed inspection data for all units"),
-        ("🔍 Defects Only", "Filtered view showing only items with issues"),
-        ("🔧 Trade Specific Summary", "Comprehensive trade analysis with priorities and affected units"),
-        ("🔍 Component Details", "Shows which specific units have defects for each component"),
-        ("📊 By Trade", "Defects grouped by trade category"),
-        ("🏠 By Unit", "Unit-specific defect summaries"),
-        ("🚪 By Room", "Room-specific analysis")
-    ]
-    
-    for title, description in report_contents:
-        st.markdown(f"""
-        <div class="trade-item">
-            <strong>{title}</strong><br>
-            <small style="color: #666;">{description}</small>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Final success message
-    st.markdown("""
-    <div style="text-align: center; margin: 2rem 0;">
-        <h3 style="color: #4CAF50;">🎉 Your professional inspection report is ready!</h3>
-        <p style="color: #666; font-size: 1.1rem;">The Excel file includes a beautifully formatted Executive Dashboard that matches industry standards.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.success("🎉 Your professional inspection report is ready!")
 
 def process_inspection_file(uploaded_file, trade_mapping, include_charts, detailed_breakdown, executive_summary, notification_email):
     """Process the inspection file"""
@@ -1190,3 +888,169 @@ with tab2:
         mapping_source = st.radio(
             "Choose your mapping source:",
             ["Load default mapping", "Upload custom mapping file", "Start with empty mapping"],
+            help="Choose how to initialize your trade mapping"
+        )
+    
+    with col2:
+        st.markdown("### 🔧 Actions")
+        if st.button("🔄 Reset Mapping"):
+            st.session_state.trade_mapping = load_default_mapping()
+            st.session_state.mapping_edited = True
+            st.success("✅ Mapping reset to default")
+        
+        if st.button("📥 Download Current Mapping"):
+            if st.session_state.trade_mapping is not None:
+                csv = st.session_state.trade_mapping.to_csv(index=False)
+                st.download_button(
+                    label="💾 Download CSV",
+                    data=csv,
+                    file_name=f"trade_mapping_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+    
+    # Handle mapping source selection
+    if mapping_source == "Upload custom mapping file":
+        uploaded_mapping = st.file_uploader(
+            "Upload Trade Mapping CSV",
+            type=['csv'],
+            help="Upload a CSV file with columns: Room, Component, Trade"
+        )
+        if uploaded_mapping is not None:
+            try:
+                mapping_df = pd.read_csv(uploaded_mapping)
+                if all(col in mapping_df.columns for col in ['Room', 'Component', 'Trade']):
+                    st.session_state.trade_mapping = mapping_df
+                    st.session_state.mapping_edited = True
+                    st.success(f"✅ Loaded {len(mapping_df)} mappings from uploaded file")
+                else:
+                    st.error("❌ CSV must have columns: Room, Component, Trade")
+            except Exception as e:
+                st.error(f"❌ Error reading file: {str(e)}")
+    
+    elif mapping_source == "Load default mapping":
+        if st.session_state.trade_mapping is None:
+            st.session_state.trade_mapping = load_default_mapping()
+            st.session_state.mapping_edited = True
+        
+    elif mapping_source == "Start with empty mapping":
+        if st.session_state.trade_mapping is None or len(st.session_state.trade_mapping) > 0:
+            st.session_state.trade_mapping = pd.DataFrame(columns=['Room', 'Component', 'Trade'])
+            st.session_state.mapping_edited = True
+    
+    # Display mapping if available
+    if st.session_state.trade_mapping is not None:
+        st.markdown("---")
+        st.markdown("### ✏️ Edit Trade Mapping")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Mappings", len(st.session_state.trade_mapping))
+        with col2:
+            unique_rooms = st.session_state.trade_mapping['Room'].nunique() if len(st.session_state.trade_mapping) > 0 else 0
+            st.metric("Unique Rooms", unique_rooms)
+        with col3:
+            unique_trades = st.session_state.trade_mapping['Trade'].nunique() if len(st.session_state.trade_mapping) > 0 else 0
+            st.metric("Trade Categories", unique_trades)
+        with col4:
+            if st.session_state.mapping_edited:
+                st.success("✅ Modified")
+            else:
+                st.info("📝 Ready")
+        
+        if len(st.session_state.trade_mapping) > 0:
+            st.markdown("#### 📋 Current Mapping")
+            
+            edited_mapping = st.data_editor(
+                st.session_state.trade_mapping,
+                use_container_width=True,
+                num_rows="dynamic",
+                column_config={
+                    "Room": st.column_config.TextColumn("Room", width="medium"),
+                    "Component": st.column_config.TextColumn("Component", width="large"),
+                    "Trade": st.column_config.SelectboxColumn(
+                        "Trade",
+                        options=get_available_trades(),
+                        width="medium"
+                    )
+                },
+                key="mapping_editor"
+            )
+            
+            if not edited_mapping.equals(st.session_state.trade_mapping):
+                st.session_state.trade_mapping = edited_mapping
+                st.session_state.mapping_edited = True
+                st.success("✅ Mapping updated!")
+
+with tab1:
+    # Sidebar options
+    st.sidebar.title("⚙️ Processing Options")
+    st.sidebar.markdown("---")
+    
+    if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
+        st.sidebar.success(f"✅ Trade mapping ready ({len(st.session_state.trade_mapping)} mappings)")
+    else:
+        st.sidebar.warning("⚠️ No trade mapping configured.")
+    
+    st.sidebar.subheader("📊 Report Options")
+    include_charts = st.sidebar.checkbox("Include analysis charts", value=True)
+    detailed_breakdown = st.sidebar.checkbox("Detailed trade breakdown", value=True)
+    executive_summary = st.sidebar.checkbox("Executive summary", value=True)
+    
+    st.sidebar.subheader("📧 Notifications")
+    notification_email = st.sidebar.text_input("Email for notifications (optional)")
+    
+    # Main content
+    st.markdown("## 📤 Upload & Process Inspection Files")
+    
+    if st.session_state.trade_mapping is not None:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Mappings Loaded", len(st.session_state.trade_mapping))
+        with col2:
+            st.metric("Trade Categories", st.session_state.trade_mapping['Trade'].nunique() if len(st.session_state.trade_mapping) > 0 else 0)
+        with col3:
+            st.metric("Room Types", st.session_state.trade_mapping['Room'].nunique() if len(st.session_state.trade_mapping) > 0 else 0)
+    
+    st.markdown("### 📋 Upload Inspection File")
+    uploaded_file = st.file_uploader(
+        "Choose iAuditor CSV file",
+        type=['csv'],
+        help="Select the CSV file exported from iAuditor"
+    )
+    
+    if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
+        with st.expander("🔍 Preview Current Trade Mapping"):
+            st.dataframe(
+                st.session_state.trade_mapping.head(10),
+                use_container_width=True
+            )
+            if len(st.session_state.trade_mapping) > 10:
+                st.info(f"Showing first 10 of {len(st.session_state.trade_mapping)} total mappings")
+    
+    if uploaded_file is not None:
+        st.markdown("---")
+        if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
+            if st.button("🚀 Process Inspection Report", type="primary", use_container_width=True):
+                process_inspection_file(
+                    uploaded_file, 
+                    st.session_state.trade_mapping, 
+                    include_charts, 
+                    detailed_breakdown, 
+                    executive_summary, 
+                    notification_email
+                )
+        else:
+            st.warning("⚠️ Please configure trade mapping first.")
+
+with tab3:
+    st.markdown("## 📊 Report Analytics & History")
+    st.info("🚧 This section will show historical reports and analytics in future versions")
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style="text-align: center; color: #666; font-size: 0.9em; padding: 2rem;">
+    <h4>🏢 Inspection Report Processor with Trade Analysis</h4>
+    <p>Professional inspection report processing with comprehensive trade mapping</p>
+</div>
+""", unsafe_allow_html=True)
