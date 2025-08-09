@@ -1,7 +1,7 @@
-streamlit>=1.28.0
-pandas>=1.5.0
-xlsxwriter>=3.0.0
-openpyxl>=3.0.0
-requests>=2.25.0
-python-dateutil>=2
-pytz>=2023.3
+streamlit
+pandas
+xlsxwriter
+python-docx==0.8.11
+matplotlib==3.7.2
+seaborn==0.12.2
+pytz
