@@ -1,325 +1,4 @@
-with tab2:
-    st.markdown("## 🗺️ Trade Mapping Management")
-    st.markdown("Upload your master trade mapping CSV file to get started")
-    
-    # Mapping source selection
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("### 📋 Mapping Source")
-        mapping_source = st.radio(
-            "Choose your mapping source:",
-            ["Upload master mapping CSV", "Start with empty mapping", "Use current mapping"],
-            help="Upload your master CSV file with Room, Component, Trade columns"
-        )
-    
-    with col2:
-        st.markdown("### 🔧 Actions")
-        if st.button("🔄 Clear All Mappings"):
-            st.session_state.trade_mapping = pd.DataFrame(columns=['Room', 'Component', 'Trade'])
-            st.session_state.mapping_edited = True
-            st.success("✅ All mappings cleared")
-        
-        if st.button("📥 Download Current Mapping"):
-            if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
-                csv = st.session_state.trade_mapping.to_csv(index=False)
-                st.download_button(
-                    label="💾 Download CSV",
-                    data=csv,
-                    file_name=f"trade_mapping_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    mime="text/csv"
-                )
-            else:
-                st.warning("No mapping data to download")
-    
-    # Handle mapping source selection
-    if mapping_source == "Upload master mapping CSV":
-        st.markdown("#### 📤 Upload Your Master Trade Mapping")
-        uploaded_mapping = st.file_uploader(
-            "Upload Master Trade Mapping CSV",
-            type=['csv'],
-            help="Upload your CSV file with columns: Room, Component, Trade",
-            key="master_mapping_upload"
-        )
-        
-        if uploaded_mapping is not None:
-            try:
-                # Read the uploaded file
-                mapping_df = pd.read_csv(uploaded_mapping)
-                
-                # Validate required columns
-                required_cols = ['Room', 'Component', 'Trade']
-                if all(col in mapping_df.columns for col in required_cols):
-                    
-                    # Display preview
-                    st.markdown("#### 🔍 Preview of Uploaded Mapping")
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Total Mappings", len(mapping_df))
-                    with col2:
-                        st.metric("Unique Rooms", mapping_df['Room'].nunique())
-                    with col3:
-                        st.metric("Unique Trades", mapping_df['Trade'].nunique())
-                    
-                    # Show first 10 rows
-                    st.dataframe(mapping_df.head(10), use_container_width=True)
-                    if len(mapping_df) > 10:
-                        st.info(f"Showing first 10 of {len(mapping_df)} total mappings")
-                    
-                    # Option to use this mapping
-                    col1, col2 = st.columns([3, 1])
-                    with col1:
-                        use_uploaded = st.checkbox(
-                            f"✅ Use this mapping as my master trade mapping ({len(mapping_df)} entries)",
-                            key="use_uploaded_mapping"
-                        )
-                    
-                    with col2:
-                        if st.button("🚀 Apply Mapping", type="primary"):
-                            if use_uploaded:
-                                st.session_state.trade_mapping = mapping_df.copy()
-                                st.session_state.mapping_edited = True
-                                st.success(f"✅ Applied {len(mapping_df)} trade mappings successfully!")
-                                st.balloons()
-                                st.rerun()
-                            else:
-                                st.warning("Please check the box to confirm using this mapping")
-                    
-                    # Show trade distribution
-                    if len(mapping_df) > 0:
-                        st.markdown("#### 📊 Trade Distribution")
-                        trade_counts = mapping_df['Trade'].value_counts()
-                        
-                        # Create columns for trade counts
-                        cols = st.columns(min(len(trade_counts), 5))
-                        for i, (trade, count) in enumerate(trade_counts.head(5).items()):
-                            with cols[i % 5]:
-                                st.metric(trade, count)
-                        
-                        if len(trade_counts) > 5:
-                            st.info(f"Showing top 5 trades. Total unique trades: {len(trade_counts)}")
-                
-                else:
-                    st.error("❌ CSV must have columns: Room, Component, Trade")
-                    st.markdown("**Expected format:**")
-                    st.code("""Room,Component,Trade
-Apartment Entry Door,Door Handle,Doors
-Bathroom,Ceiling,Painting
-Kitchen Area,Cabinets,Carpentry & Joinery""")
-                    
-            except Exception as e:
-                st.error(f"❌ Error reading CSV file: {str(e)}")
-                st.markdown("**Tips:**")
-                st.markdown("- Ensure the file is a valid CSV")
-                st.markdown("- Check that columns are named exactly: Room, Component, Trade")
-                st.markdown("- Make sure there are no special characters causing issues")
-    
-    elif mapping_source == "Use current mapping":
-        if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
-            st.info(f"Using current mapping with {len(st.session_state.trade_mapping)} entries")
-        else:
-            st.warning("No current mapping available. Please upload a CSV file first.")
-        
-    elif mapping_source == "Start with empty mapping":
-        if st.button("🆕 Initialize Empty Mapping"):
-            st.session_state.trade_mapping = pd.DataFrame(columns=['Room', 'Component', 'Trade'])
-            st.session_state.mapping_edited = True
-            st.success("✅ Initialized with empty mapping")
-    
-    # Display current mapping if available
-    if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
-        st.markdown("---")
-        st.markdown("### ✏️ Current Trade Mapping")
-        
-        # Mapping statistics
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Total Mappings", len(st.session_state.trade_mapping))
-        with col2:
-            unique_rooms = st.session_state.trade_mapping['Room'].nunique()
-            st.metric("Unique Rooms", unique_rooms)
-        with col3:
-            unique_trades = st.session_state.trade_mapping['Trade'].nunique()
-            st.metric("Trade Categories", unique_trades)
-        with col4:
-            if st.session_state.mapping_edited:
-                st.success("✅ Active")
-            else:
-                st.info("📝 Ready")
-        
-        # Quick preview
-        with st.expander("🔍 Preview Current Mapping", expanded=False):
-            st.dataframe(
-                st.session_state.trade_mapping.head(15),
-                use_container_width=True
-            )
-            if len(st.session_state.trade_mapping) > 15:
-                st.info(f"Showing first 15 of {len(st.session_state.trade_mapping)} total mappings")
-        
-        # Editable mapping
-        with st.expander("✏️ Edit Mapping (Advanced)", expanded=False):
-            edited_mapping = st.data_editor(
-                st.session_state.trade_mapping,
-                use_container_width=True,
-                num_rows="dynamic",
-                column_config={
-                    "Room": st.column_config.TextColumn("Room", width="medium"),
-                    "Component": st.column_config.TextColumn("Component", width="large"),
-                    "Trade": st.column_config.SelectboxColumn(
-                        "Trade",
-                        options=get_available_trades(),
-                        width="medium"
-                    )
-                },
-                key="mapping_editor"
-            )
-            
-            # Update session state if changes were made
-            if not edited_mapping.equals(st.session_state.trade_mapping):
-                st.session_state.trade_mapping = edited_mapping
-                st.session_state.mapping_edited = True
-                st.success("✅ Mapping updated!")
-        
-        # Add new mapping entry
-        with st.expander("➕ Add Single Mapping", expanded=False):
-            col1, col2, col3, col4 = st.columns([2, 3, 2, 1])
-            
-            with col1:
-                new_room = st.text_input("Room", key="new_room")
-            
-            with col2:
-                new_component = st.text_input("Component", key="new_component")
-            
-            with col3:
-                new_trade = st.selectbox("Trade", get_available_trades(), key="new_trade")
-            
-            with col4:
-                if st.button("➕ Add", key="add_mapping"):
-                    if new_room and new_component and new_tradedef load_default_mapping():
-    """Load empty mapping by default - users will upload their own master data"""
-    
-    # Return empty DataFrame with correct columns
-    df = pd.DataFrame(columns=['Room', 'Component', 'Trade'])
-    
-    st.info("📋 No default mapping loaded. Please upload your master trade mapping CSV file to get started.")
-    
-    return df,GPO,Electrical
-Butler's Pantry,Light Fixtures,Electrical
-Butler's Pantry,Sink,Plumbing
-Butler's Pantry (if applicable),Cabinets/Shelving,Carpentry & Joinery
-Butler's Pantry (if applicable),Ceiling,Painting
-Butler's Pantry (if applicable),Flooring,Flooring - Timber
-Butler's Pantry (if applicable),GPO,Electrical
-Butler's Pantry (if applicable),Light Fixtures,Electrical
-Butler's Pantry (if applicable),Sink,Plumbing
-Corridor,Ceiling,Painting
-Corridor,Flooring,Flooring - Timber
-Corridor,Intercom,Electrical
-Corridor,Light Fixtures,Electrical
-Corridor,Skirting,Carpentry & Joinery
-Corridor,Walls,Painting
-Dining & Living Room Area,Ceiling,Painting
-Dining & Living Room Area,Flooring,Flooring - Timber
-Dining & Living Room Area,GPO,Electrical
-Dining & Living Room Area,Light Fixtures,Electrical
-Dining & Living Room Area,Skirting,Carpentry & Joinery
-Dining & Living Room Area,Walls,Painting
-Dining & Living Room Area,Windows (if applicable),Windows
-Downstairs Bathroom,Ceiling,Painting
-Downstairs Bathroom,Doors,Doors
-Downstairs Bathroom,Exhaust Fan,Electrical
-Downstairs Bathroom,GPO,Electrical
-Downstairs Bathroom,Light Fixtures,Electrical
-Downstairs Bathroom,Mirror,Carpentry & Joinery
-Downstairs Bathroom,Shower,Plumbing
-Downstairs Bathroom,Sink,Plumbing
-Downstairs Bathroom,Skirting,Carpentry & Joinery
-Downstairs Bathroom,Tiles,Flooring - Tiles
-Downstairs Bathroom,Toilet,Plumbing
-Downstairs Bathroom,Walls,Painting
-Downstairs Toilet (if applicable),Ceiling,Painting
-Downstairs Toilet (if applicable),Doors,Doors
-Downstairs Toilet (if applicable),Exhaust Fan,Electrical
-Downstairs Toilet (if applicable),Light Fixtures,Electrical
-Downstairs Toilet (if applicable),Sink,Plumbing
-Downstairs Toilet (if applicable),Skirting,Carpentry & Joinery
-Downstairs Toilet (if applicable),Tiles,Flooring - Tiles
-Downstairs Toilet (if applicable),Toilet,Plumbing
-Downstairs Toilet (if applicable),Walls,Painting
-Kitchen Area,Cabinets,Carpentry & Joinery
-Kitchen Area,Ceiling,Painting
-Kitchen Area,Dishwasher,Plumbing
-Kitchen Area,Dishwasher (if applicable),Plumbing
-Kitchen Area,Flooring,Flooring - Timber
-Kitchen Area,GPO,Electrical
-Kitchen Area,Kitchen Sink,Plumbing
-Kitchen Area,Kitchen Table Tops,Carpentry & Joinery
-Kitchen Area,Light Fixtures,Electrical
-Kitchen Area,Rangehood,Appliances
-Kitchen Area,Splashbacks,Painting
-Kitchen Area,Stovetop and Oven,Appliances
-Laundry Room,Windows (if applicable),Windows
-Laundry Section,Cold/Hot Water Outlets,Plumbing
-Laundry Section,Doors,Doors
-Laundry Section,Drainage,Plumbing
-Laundry Section,Exhaust Fan,Electrical
-Laundry Section,GPO,Electrical
-Laundry Section,Laundry Sink,Plumbing
-Laundry Section,Light Fixtures,Electrical
-Laundry Section,Skirting,Carpentry & Joinery
-Laundry Section,Tiles,Flooring - Tiles
-Laundry Section,Walls,Painting
-Staircase,Ceiling,Painting
-Staircase,Light Fixtures,Electrical
-Staircase,Railing (if applicable),Carpentry & Joinery
-Staircase,Skirting,Carpentry & Joinery
-Staircase,Staircase,Carpentry & Joinery
-Staircase,Walls,Painting
-Study Area (if applicable),Desk,Carpentry & Joinery
-Study Area (if applicable),GPO,Electrical
-Study Area (if applicable),Light Fixtures,Electrical
-Study Area (if applicable),Skirting,Carpentry & Joinery
-Study Area (if applicable),Walls,Painting
-Upstair Corridor,Ceiling,Painting
-Upstair Corridor,Flooring,Flooring - Timber
-Upstair Corridor,Light Fixtures,Electrical
-Upstair Corridor,Skirting,Carpentry & Joinery
-Upstair Corridor,Walls,Painting
-Upstairs Bathroom,Bathtub (if applicable),Plumbing
-Upstairs Bathroom,Ceiling,Painting
-Upstairs Bathroom,Doors,Doors
-Upstairs Bathroom,Exhaust Fan,Electrical
-Upstairs Bathroom,GPO,Electrical
-Upstairs Bathroom,Light Fixtures,Electrical
-Upstairs Bathroom,Mirror,Carpentry & Joinery
-Upstairs Bathroom,Shower,Plumbing
-Upstairs Bathroom,Sink,Plumbing
-Upstairs Bathroom,Skirting,Carpentry & Joinery
-Upstairs Bathroom,Tiles,Flooring - Tiles
-Upstairs Bathroom,Toilet,Plumbing
-Upstairs Bathroom,Walls,Painting"""
-    
-    # Parse the CSV data using StringIO
-    from io import StringIO
-    import pandas as pd
-    
-    # Create DataFrame from CSV string
-    df = pd.read_csv(StringIO(master_mapping_csv))
-    
-    # Display confirmation message
-    st.success(f"✅ Loaded exactly {len(df)} trade mappings from master data!")
-    
-    return df,Cold/Hot Water Outlets,Plumbing
-Laundry Room,Doors,Doors
-Laundry Room,Drainage,Plumbing
-Laundry Room,Exhaust Fan,Electrical
-Laundry Room,GPO,Electrical
-Laundry Room,Laundry Sink,Plumbing
-Laundry Room,Light Fixtures,Electrical
-Laundry Room,Skirting,Carpentry & Joinery
-Laundry Room,Tiles,Flooring - Tiles
-Laundry Room,Walls,Painting
-Laundry Room# Complete Working Streamlit App with Interactive Trade Mapping Management
+# Complete Working Streamlit App with Interactive Trade Mapping Management
 # File: streamlit_app.py
 
 import streamlit as st
@@ -424,244 +103,229 @@ st.markdown("""
 def load_default_mapping():
     """Load comprehensive trade mappings"""
     
-    # Create comprehensive mapping data
-    mapping_data = []
+    # Master mapping CSV data as a string
+    master_mapping_csv = """Room,Component,Trade
+Apartment Entry Door,Door Handle,Doors
+Apartment Entry Door,Door Locks and Keys,Doors
+Apartment Entry Door,Paint,Painting
+Apartment Entry Door,Self Latching,Doors
+Balcony,Balustrade,Carpentry & Joinery
+Balcony,Drainage Point,Plumbing
+Balcony,GPO (if applicable),Electrical
+Balcony,Glass,Windows
+Balcony,Glass Sliding Door,Windows
+Balcony,Tiles,Flooring - Tiles
+Bathroom,Bathtub (if applicable),Plumbing
+Bathroom,Ceiling,Painting
+Bathroom,Doors,Doors
+Bathroom,Exhaust Fan,Electrical
+Bathroom,GPO,Electrical
+Bathroom,Light Fixtures,Electrical
+Bathroom,Mirror,Carpentry & Joinery
+Bathroom,Shower,Plumbing
+Bathroom,Sink,Plumbing
+Bathroom,Skirting,Carpentry & Joinery
+Bathroom,Tiles,Flooring - Tiles
+Bathroom,Toilet,Plumbing
+Bathroom,Walls,Painting
+Bedroom,Carpets,Flooring - Carpets
+Bedroom,Ceiling,Painting
+Bedroom,Doors,Doors
+Bedroom,GPO,Electrical
+Bedroom,Light Fixtures,Electrical
+Bedroom,Skirting,Carpentry & Joinery
+Bedroom,Walls,Painting
+Bedroom,Wardrobe,Carpentry & Joinery
+Bedroom,Windows,Windows
+Bedroom 1,Carpets,Flooring - Carpets
+Bedroom 1,Ceiling,Painting
+Bedroom 1,Doors,Doors
+Bedroom 1,GPO,Electrical
+Bedroom 1,Light Fixtures,Electrical
+Bedroom 1,Skirting,Carpentry & Joinery
+Bedroom 1,Walls,Painting
+Bedroom 1,Wardrobe,Carpentry & Joinery
+Bedroom 1,Windows,Windows
+Bedroom 1 w/Ensuite,Bathtub (if applicable),Plumbing
+Bedroom 1 w/Ensuite,Carpets,Flooring - Carpets
+Bedroom 1 w/Ensuite,Ceiling,Painting
+Bedroom 1 w/Ensuite,Doors,Doors
+Bedroom 1 w/Ensuite,Exhaust Fan,Electrical
+Bedroom 1 w/Ensuite,GPO,Electrical
+Bedroom 1 w/Ensuite,Light Fixtures,Electrical
+Bedroom 1 w/Ensuite,Mirror,Carpentry & Joinery
+Bedroom 1 w/Ensuite,Shower,Plumbing
+Bedroom 1 w/Ensuite,Sink,Plumbing
+Bedroom 1 w/Ensuite,Skirting,Carpentry & Joinery
+Bedroom 1 w/Ensuite,Tiles,Flooring - Tiles
+Bedroom 1 w/Ensuite,Toilet,Plumbing
+Bedroom 1 w/Ensuite,Walls,Painting
+Bedroom 1 w/Ensuite,Wardrobe,Carpentry & Joinery
+Bedroom 1 w/Ensuite,Windows,Windows
+Bedroom 2,Carpets,Flooring - Carpets
+Bedroom 2,Ceiling,Painting
+Bedroom 2,Doors,Doors
+Bedroom 2,GPO,Electrical
+Bedroom 2,Light Fixtures,Electrical
+Bedroom 2,Skirting,Carpentry & Joinery
+Bedroom 2,Walls,Painting
+Bedroom 2,Wardrobe,Carpentry & Joinery
+Bedroom 2,Windows,Windows
+Bedroom 2 w/Ensuite,Bathtub (if applicable),Plumbing
+Bedroom 2 w/Ensuite,Carpets,Flooring - Carpets
+Bedroom 2 w/Ensuite,Ceiling,Painting
+Bedroom 2 w/Ensuite,Doors,Doors
+Bedroom 2 w/Ensuite,Exhaust Fan,Electrical
+Bedroom 2 w/Ensuite,GPO,Electrical
+Bedroom 2 w/Ensuite,Light Fixtures,Electrical
+Bedroom 2 w/Ensuite,Mirror,Carpentry & Joinery
+Bedroom 2 w/Ensuite,Shower,Plumbing
+Bedroom 2 w/Ensuite,Sink,Plumbing
+Bedroom 2 w/Ensuite,Skirting,Carpentry & Joinery
+Bedroom 2 w/Ensuite,Tiles,Flooring - Tiles
+Bedroom 2 w/Ensuite,Toilet,Plumbing
+Bedroom 2 w/Ensuite,Walls,Painting
+Bedroom 2 w/Ensuite,Wardrobe,Carpentry & Joinery
+Bedroom 2 w/Ensuite,Windows,Windows
+Bedroom 3,Carpets,Flooring - Carpets
+Bedroom 3,Ceiling,Painting
+Bedroom 3,Doors,Doors
+Bedroom 3,GPO,Electrical
+Bedroom 3,Light Fixtures,Electrical
+Bedroom 3,Skirting,Carpentry & Joinery
+Bedroom 3,Walls,Painting
+Bedroom 3,Wardrobe,Carpentry & Joinery
+Bedroom 3,Windows,Windows
+Bedroom w/Ensuite,Bathtub (if applicable),Plumbing
+Bedroom w/Ensuite,Carpets,Flooring - Carpets
+Bedroom w/Ensuite,Ceiling,Painting
+Bedroom w/Ensuite,Doors,Doors
+Bedroom w/Ensuite,Exhaust Fan,Electrical
+Bedroom w/Ensuite,GPO,Electrical
+Bedroom w/Ensuite,Light Fixtures,Electrical
+Bedroom w/Ensuite,Mirror,Carpentry & Joinery
+Bedroom w/Ensuite,Shower,Plumbing
+Bedroom w/Ensuite,Sink,Plumbing
+Bedroom w/Ensuite,Skirting,Carpentry & Joinery
+Bedroom w/Ensuite,Tiles,Flooring - Tiles
+Bedroom w/Ensuite,Toilet,Plumbing
+Bedroom w/Ensuite,Walls,Painting
+Bedroom w/Ensuite,Wardrobe,Carpentry & Joinery
+Bedroom w/Ensuite,Windows,Windows
+Butler's Pantry,Cabinets/Shelving,Carpentry & Joinery
+Butler's Pantry,Ceiling,Painting
+Butler's Pantry,Flooring,Flooring - Timber
+Butler's Pantry,GPO,Electrical
+Butler's Pantry,Light Fixtures,Electrical
+Butler's Pantry,Sink,Plumbing
+Butler's Pantry (if applicable),Cabinets/Shelving,Carpentry & Joinery
+Butler's Pantry (if applicable),Ceiling,Painting
+Butler's Pantry (if applicable),Flooring,Flooring - Timber
+Butler's Pantry (if applicable),GPO,Electrical
+Butler's Pantry (if applicable),Light Fixtures,Electrical
+Butler's Pantry (if applicable),Sink,Plumbing
+Corridor,Ceiling,Painting
+Corridor,Flooring,Flooring - Timber
+Corridor,Intercom,Electrical
+Corridor,Light Fixtures,Electrical
+Corridor,Skirting,Carpentry & Joinery
+Corridor,Walls,Painting
+Dining & Living Room Area,Ceiling,Painting
+Dining & Living Room Area,Flooring,Flooring - Timber
+Dining & Living Room Area,GPO,Electrical
+Dining & Living Room Area,Light Fixtures,Electrical
+Dining & Living Room Area,Skirting,Carpentry & Joinery
+Dining & Living Room Area,Walls,Painting
+Dining & Living Room Area,Windows (if applicable),Windows
+Downstairs Bathroom,Ceiling,Painting
+Downstairs Bathroom,Doors,Doors
+Downstairs Bathroom,Exhaust Fan,Electrical
+Downstairs Bathroom,GPO,Electrical
+Downstairs Bathroom,Light Fixtures,Electrical
+Downstairs Bathroom,Mirror,Carpentry & Joinery
+Downstairs Bathroom,Shower,Plumbing
+Downstairs Bathroom,Sink,Plumbing
+Downstairs Bathroom,Skirting,Carpentry & Joinery
+Downstairs Bathroom,Tiles,Flooring - Tiles
+Downstairs Bathroom,Toilet,Plumbing
+Downstairs Bathroom,Walls,Painting
+Downstairs Toilet (if applicable),Ceiling,Painting
+Downstairs Toilet (if applicable),Doors,Doors
+Downstairs Toilet (if applicable),Exhaust Fan,Electrical
+Downstairs Toilet (if applicable),Light Fixtures,Electrical
+Downstairs Toilet (if applicable),Sink,Plumbing
+Downstairs Toilet (if applicable),Skirting,Carpentry & Joinery
+Downstairs Toilet (if applicable),Tiles,Flooring - Tiles
+Downstairs Toilet (if applicable),Toilet,Plumbing
+Downstairs Toilet (if applicable),Walls,Painting
+Kitchen Area,Cabinets,Carpentry & Joinery
+Kitchen Area,Ceiling,Painting
+Kitchen Area,Dishwasher,Plumbing
+Kitchen Area,Dishwasher (if applicable),Plumbing
+Kitchen Area,Flooring,Flooring - Timber
+Kitchen Area,GPO,Electrical
+Kitchen Area,Kitchen Sink,Plumbing
+Kitchen Area,Kitchen Table Tops,Carpentry & Joinery
+Kitchen Area,Light Fixtures,Electrical
+Kitchen Area,Rangehood,Appliances
+Kitchen Area,Splashbacks,Painting
+Kitchen Area,Stovetop and Oven,Appliances
+Laundry Room,Windows (if applicable),Windows
+Laundry Section,Cold/Hot Water Outlets,Plumbing
+Laundry Section,Doors,Doors
+Laundry Section,Drainage,Plumbing
+Laundry Section,Exhaust Fan,Electrical
+Laundry Section,GPO,Electrical
+Laundry Section,Laundry Sink,Plumbing
+Laundry Section,Light Fixtures,Electrical
+Laundry Section,Skirting,Carpentry & Joinery
+Laundry Section,Tiles,Flooring - Tiles
+Laundry Section,Walls,Painting
+Staircase,Ceiling,Painting
+Staircase,Light Fixtures,Electrical
+Staircase,Railing (if applicable),Carpentry & Joinery
+Staircase,Skirting,Carpentry & Joinery
+Staircase,Staircase,Carpentry & Joinery
+Staircase,Walls,Painting
+Study Area (if applicable),Desk,Carpentry & Joinery
+Study Area (if applicable),GPO,Electrical
+Study Area (if applicable),Light Fixtures,Electrical
+Study Area (if applicable),Skirting,Carpentry & Joinery
+Study Area (if applicable),Walls,Painting
+Upstair Corridor,Ceiling,Painting
+Upstair Corridor,Flooring,Flooring - Timber
+Upstair Corridor,Light Fixtures,Electrical
+Upstair Corridor,Skirting,Carpentry & Joinery
+Upstair Corridor,Walls,Painting
+Upstairs Bathroom,Bathtub (if applicable),Plumbing
+Upstairs Bathroom,Ceiling,Painting
+Upstairs Bathroom,Doors,Doors
+Upstairs Bathroom,Exhaust Fan,Electrical
+Upstairs Bathroom,GPO,Electrical
+Upstairs Bathroom,Light Fixtures,Electrical
+Upstairs Bathroom,Mirror,Carpentry & Joinery
+Upstairs Bathroom,Shower,Plumbing
+Upstairs Bathroom,Sink,Plumbing
+Upstairs Bathroom,Skirting,Carpentry & Joinery
+Upstairs Bathroom,Tiles,Flooring - Tiles
+Upstairs Bathroom,Toilet,Plumbing
+Upstairs Bathroom,Walls,Painting
+Laundry Room,Cold/Hot Water Outlets,Plumbing
+Laundry Room,Doors,Doors
+Laundry Room,Drainage,Plumbing
+Laundry Room,Exhaust Fan,Electrical
+Laundry Room,GPO,Electrical
+Laundry Room,Laundry Sink,Plumbing
+Laundry Room,Light Fixtures,Electrical
+Laundry Room,Skirting,Carpentry & Joinery
+Laundry Room,Tiles,Flooring - Tiles
+Laundry Room,Walls,Painting"""
     
-    # Core room-component-trade mappings
-    mappings = [
-        # Entry Doors
-        ("Apartment Entry Door", "Door Handle", "Doors"),
-        ("Apartment Entry Door", "Door Locks and Keys", "Doors"),
-        ("Apartment Entry Door", "Paint", "Painting"),
-        ("Apartment Entry Door", "Self Latching", "Doors"),
-        
-        # Balcony
-        ("Balcony", "Balustrade", "Carpentry & Joinery"),
-        ("Balcony", "Drainage Point", "Plumbing"),
-        ("Balcony", "GPO (if applicable)", "Electrical"),
-        ("Balcony", "Glass", "Windows"),
-        ("Balcony", "Glass Sliding Door", "Windows"),
-        ("Balcony", "Tiles", "Flooring - Tiles"),
-        
-        # Bathroom
-        ("Bathroom", "Bathtub (if applicable)", "Plumbing"),
-        ("Bathroom", "Ceiling", "Painting"),
-        ("Bathroom", "Doors", "Doors"),
-        ("Bathroom", "Exhaust Fan", "Electrical"),
-        ("Bathroom", "GPO", "Electrical"),
-        ("Bathroom", "Light Fixtures", "Electrical"),
-        ("Bathroom", "Mirror", "Carpentry & Joinery"),
-        ("Bathroom", "Shower", "Plumbing"),
-        ("Bathroom", "Sink", "Plumbing"),
-        ("Bathroom", "Skirting", "Carpentry & Joinery"),
-        ("Bathroom", "Tiles", "Flooring - Tiles"),
-        ("Bathroom", "Toilet", "Plumbing"),
-        ("Bathroom", "Walls", "Painting"),
-        
-        # Kitchen Area
-        ("Kitchen Area", "Appliances", "Appliances"),
-        ("Kitchen Area", "Benchtop", "Carpentry & Joinery"),
-        ("Kitchen Area", "Cabinets", "Carpentry & Joinery"),
-        ("Kitchen Area", "Ceiling", "Painting"),
-        ("Kitchen Area", "Dishwasher (if applicable)", "Plumbing"),
-        ("Kitchen Area", "Flooring", "Flooring - Timber"),
-        ("Kitchen Area", "GPO", "Electrical"),
-        ("Kitchen Area", "Kitchen Sink", "Plumbing"),
-        ("Kitchen Area", "Kitchen Table Tops", "Carpentry & Joinery"),
-        ("Kitchen Area", "Light Fixtures", "Electrical"),
-        ("Kitchen Area", "Rangehood", "Appliances"),
-        ("Kitchen Area", "Splashback", "Flooring - Tiles"),
-        ("Kitchen Area", "Stovetop and Oven", "Appliances"),
-        ("Kitchen Area", "Walls", "Painting"),
-        ("Kitchen Area", "Windows (if applicable)", "Windows"),
-        
-        # Living Spaces
-        ("Living Room", "Ceiling", "Painting"),
-        ("Living Room", "Flooring", "Flooring - Timber"),
-        ("Living Room", "GPO", "Electrical"),
-        ("Living Room", "Light Fixtures", "Electrical"),
-        ("Living Room", "Skirting", "Carpentry & Joinery"),
-        ("Living Room", "Walls", "Painting"),
-        ("Living Room", "Windows", "Windows"),
-        
-        ("Dining & Living Room Area", "Ceiling", "Painting"),
-        ("Dining & Living Room Area", "Flooring", "Flooring - Timber"),
-        ("Dining & Living Room Area", "GPO", "Electrical"),
-        ("Dining & Living Room Area", "Light Fixtures", "Electrical"),
-        ("Dining & Living Room Area", "Skirting", "Carpentry & Joinery"),
-        ("Dining & Living Room Area", "Walls", "Painting"),
-        ("Dining & Living Room Area", "Windows (if applicable)", "Windows"),
-        
-        # Laundry
-        ("Laundry Room", "Ceiling", "Painting"),
-        ("Laundry Room", "Cold/Hot Water Outlets", "Plumbing"),
-        ("Laundry Room", "Doors", "Doors"),
-        ("Laundry Room", "Drainage", "Plumbing"),
-        ("Laundry Room", "Exhaust Fan", "Electrical"),
-        ("Laundry Room", "GPO", "Electrical"),
-        ("Laundry Room", "Laundry Sink", "Plumbing"),
-        ("Laundry Room", "Light Fixtures", "Electrical"),
-        ("Laundry Room", "Skirting", "Carpentry & Joinery"),
-        ("Laundry Room", "Tiles", "Flooring - Tiles"),
-        ("Laundry Room", "Walls", "Painting"),
-        
-        # Corridor
-        ("Corridor", "Ceiling", "Painting"),
-        ("Corridor", "Flooring", "Flooring - Timber"),
-        ("Corridor", "Light Fixtures", "Electrical"),
-        ("Corridor", "Skirting", "Carpentry & Joinery"),
-        ("Corridor", "Walls", "Painting"),
-        ("Corridor", "Intercom", "Electrical")
-    ]
+    # Parse the CSV data using StringIO
+    df = pd.read_csv(StringIO(master_mapping_csv))
     
-    # Add basic mappings
-    for room, component, trade in mappings:
-        mapping_data.append({"Room": room, "Component": component, "Trade": trade})
-    
-    # Add bedroom variations
-    bedroom_types = ["Bedroom", "Bedroom 1", "Bedroom 2", "Bedroom 3", "Master Bedroom", "Guest Bedroom"]
-    bedroom_components = [
-        ("Carpets", "Flooring - Carpets"),
-        ("Ceiling", "Painting"),
-        ("Doors", "Doors"),
-        ("GPO", "Electrical"),
-        ("Light Fixtures", "Electrical"),
-        ("Skirting", "Carpentry & Joinery"),
-        ("Walls", "Painting"),
-        ("Wardrobe", "Carpentry & Joinery"),
-        ("Windows", "Windows")
-    ]
-    
-    for bedroom in bedroom_types:
-        for component, trade in bedroom_components:
-            mapping_data.append({"Room": bedroom, "Component": component, "Trade": trade})
-    
-    # Add ensuite variations
-    ensuite_types = ["Bedroom 1 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom w/Ensuite"]
-    ensuite_components = [
-        ("Bathtub (if applicable)", "Plumbing"),
-        ("Carpets", "Flooring - Carpets"),
-        ("Ceiling", "Painting"),
-        ("Doors", "Doors"),
-        ("Exhaust Fan", "Electrical"),
-        ("GPO", "Electrical"),
-        ("Light Fixtures", "Electrical"),
-        ("Mirror", "Carpentry & Joinery"),
-        ("Shower", "Plumbing"),
-        ("Sink", "Plumbing"),
-        ("Skirting", "Carpentry & Joinery"),
-        ("Tiles", "Flooring - Tiles"),
-        ("Toilet", "Plumbing"),
-        ("Walls", "Painting"),
-        ("Wardrobe", "Carpentry & Joinery"),
-        ("Windows", "Windows")
-    ]
-    
-    for ensuite in ensuite_types:
-        for component, trade in ensuite_components:
-            mapping_data.append({"Room": ensuite, "Component": component, "Trade": trade})
-    
-    # Add bathroom variations
-    bathroom_types = ["Upstairs Bathroom", "Downstairs Bathroom"]
-    bathroom_components = [
-        ("Ceiling", "Painting"),
-        ("Doors", "Doors"),
-        ("Exhaust Fan", "Electrical"),
-        ("GPO", "Electrical"),
-        ("Light Fixtures", "Electrical"),
-        ("Mirror", "Carpentry & Joinery"),
-        ("Shower", "Plumbing"),
-        ("Sink", "Plumbing"),
-        ("Skirting", "Carpentry & Joinery"),
-        ("Tiles", "Flooring - Tiles"),
-        ("Toilet", "Plumbing"),
-        ("Walls", "Painting")
-    ]
-    
-    for bathroom in bathroom_types:
-        for component, trade in bathroom_components:
-            mapping_data.append({"Room": bathroom, "Component": component, "Trade": trade})
-    
-    # Add more room types
-    additional_mappings = [
-        ("Butler's Pantry", "Cabinets/Shelving", "Carpentry & Joinery"),
-        ("Butler's Pantry", "Ceiling", "Painting"),
-        ("Butler's Pantry", "Flooring", "Flooring - Timber"),
-        ("Butler's Pantry", "GPO", "Electrical"),
-        ("Butler's Pantry", "Light Fixtures", "Electrical"),
-        ("Butler's Pantry", "Sink", "Plumbing"),
-        
-        ("Butler's Pantry (if applicable)", "Cabinets/Shelving", "Carpentry & Joinery"),
-        ("Butler's Pantry (if applicable)", "Ceiling", "Painting"),
-        ("Butler's Pantry (if applicable)", "Flooring", "Flooring - Timber"),
-        ("Butler's Pantry (if applicable)", "GPO", "Electrical"),
-        ("Butler's Pantry (if applicable)", "Light Fixtures", "Electrical"),
-        ("Butler's Pantry (if applicable)", "Sink", "Plumbing"),
-        
-        ("Bathroom / Laundry", "Ceiling", "Painting"),
-        ("Bathroom / Laundry", "Doors", "Doors"),
-        ("Bathroom / Laundry", "Drainage", "Plumbing"),
-        ("Bathroom / Laundry", "Exhaust Fan", "Electrical"),
-        ("Bathroom / Laundry", "GPO", "Electrical"),
-        ("Bathroom / Laundry", "Light Fixtures", "Electrical"),
-        ("Bathroom / Laundry", "Mirror", "Carpentry & Joinery"),
-        ("Bathroom / Laundry", "Shower", "Plumbing"),
-        ("Bathroom / Laundry", "Sink", "Plumbing"),
-        ("Bathroom / Laundry", "Skirting", "Carpentry & Joinery"),
-        ("Bathroom / Laundry", "Tiles", "Flooring - Tiles"),
-        ("Bathroom / Laundry", "Toilet", "Plumbing"),
-        ("Bathroom / Laundry", "Walls", "Painting"),
-        ("Bathroom / Laundry", "Laundry Sink", "Plumbing"),
-        
-        ("Laundry Section", "Cold/Hot Water Outlets", "Plumbing"),
-        ("Laundry Section", "Doors", "Doors"),
-        ("Laundry Section", "Drainage", "Plumbing"),
-        ("Laundry Section", "Exhaust Fan", "Electrical"),
-        ("Laundry Section", "GPO", "Electrical"),
-        ("Laundry Section", "Laundry Sink", "Plumbing"),
-        ("Laundry Section", "Light Fixtures", "Electrical"),
-        ("Laundry Section", "Skirting", "Carpentry & Joinery"),
-        ("Laundry Section", "Tiles", "Flooring - Tiles"),
-        ("Laundry Section", "Walls", "Painting"),
-        
-        ("Family Room", "Ceiling", "Painting"),
-        ("Family Room", "Flooring", "Flooring - Timber"),
-        ("Family Room", "GPO", "Electrical"),
-        ("Family Room", "Light Fixtures", "Electrical"),
-        ("Family Room", "Skirting", "Carpentry & Joinery"),
-        ("Family Room", "Walls", "Painting"),
-        ("Family Room", "Windows (if applicable)", "Windows"),
-        
-        ("Garage", "Ceiling", "Painting"),
-        ("Garage", "Door", "Doors"),
-        ("Garage", "Electrical", "Electrical"),
-        ("Garage", "Flooring", "Flooring - Timber"),
-        ("Garage", "Walls", "Painting"),
-        
-        ("Study Area (if applicable)", "Desk", "Carpentry & Joinery"),
-        ("Study Area (if applicable)", "GPO", "Electrical"),
-        ("Study Area (if applicable)", "Light Fixtures", "Electrical"),
-        ("Study Area (if applicable)", "Skirting", "Carpentry & Joinery"),
-        ("Study Area (if applicable)", "Walls", "Painting"),
-        
-        ("Staircase", "Railing (if applicable)", "Carpentry & Joinery"),
-        ("Staircase", "Staircase", "Carpentry & Joinery"),
-        
-        ("Upstairs Landing", "Ceiling", "Painting"),
-        ("Upstairs Landing", "Flooring", "Flooring - Timber"),
-        ("Upstairs Landing", "Light Fixtures", "Electrical"),
-        ("Upstairs Landing", "Skirting", "Carpentry & Joinery"),
-        ("Upstairs Landing", "Walls", "Painting"),
-        
-        ("Upstair Corridor", "Ceiling", "Painting"),
-        ("Upstair Corridor", "Walls", "Painting")
-    ]
-    
-    for room, component, trade in additional_mappings:
-        mapping_data.append({"Room": room, "Component": component, "Trade": trade})
-    
-    # Create DataFrame
-    df = pd.DataFrame(mapping_data)
+    # Display confirmation message
+    st.success(f"✅ Loaded {len(df)} trade mappings from default data!")
     
     return df
 
@@ -1249,7 +913,6 @@ with tab2:
         if st.session_state.trade_mapping is None:
             st.session_state.trade_mapping = load_default_mapping()
             st.session_state.mapping_edited = True
-            st.info(f"✅ Loaded {len(st.session_state.trade_mapping)} trade mappings successfully!")
         
     elif mapping_source == "Start with empty mapping":
         if st.session_state.trade_mapping is None or len(st.session_state.trade_mapping) > 0:
