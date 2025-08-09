@@ -1,4 +1,4 @@
-# Enhanced Streamlit App with Interactive Trade Mapping Management
+# Complete Working Streamlit App with Interactive Trade Mapping Management
 # File: streamlit_app.py
 
 import streamlit as st
@@ -8,7 +8,7 @@ import base64
 import json
 from datetime import datetime
 import xlsxwriter
-from io import BytesIO
+from io import BytesIO, StringIO
 
 # Configure the page
 st.set_page_config(
@@ -65,31 +65,23 @@ st.markdown("""
         border: 1px solid #c3e6cb;
         margin: 1rem 0;
     }
-    .upload-section {
-        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-        padding: 2rem;
-        border-radius: 15px;
-        border: 2px dashed #1976D2;
+    .readiness-card {
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
         text-align: center;
-        margin: 1rem 0;
+        font-weight: bold;
     }
-    .mapping-editor {
-        background: linear-gradient(135deg, #f3e5f5, #e1bee7);
-        padding: 1.5rem;
-        border-radius: 10px;
-        border: 2px solid #9c27b0;
-        margin: 1rem 0;
-    }
-    .trade-category {
-        background: #f8f9fa;
-        padding: 0.5rem;
-        border-radius: 5px;
-        margin: 0.2rem;
-        display: inline-block;
-        border: 1px solid #dee2e6;
-    }
-    .st-emotion-cache-1v0mbdj > tbody > tr > td {
-        font-size: 0.9rem;
+    .ready { background: linear-gradient(135deg, #d4edda, #c3e6cb); color: #155724; }
+    .minor { background: linear-gradient(135deg, #fff3cd, #ffeaa7); color: #856404; }
+    .major { background: linear-gradient(135deg, #f8d7da, #f5c6cb); color: #721c24; }
+    .extensive { background: linear-gradient(135deg, #f8d7da, #dc3545); color: white; }
+    .trade-item {
+        background: linear-gradient(135deg, #fff, #f8f9fa);
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        border-left: 4px solid #007bff;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -107,9 +99,6 @@ st.markdown("""
     <p>Upload iAuditor CSV files and generate beautiful Excel reports with custom trade mapping</p>
 </div>
 """, unsafe_allow_html=True)
-
-# Navigation tabs
-tab1, tab2, tab3 = st.tabs(["📤 Upload & Process", "🗺️ Manage Trade Mapping", "📊 View Reports"])
 
 def load_default_mapping():
     """Load your comprehensive trade mapping"""
@@ -158,7 +147,37 @@ def load_default_mapping():
         {"Room": "Living", "Component": "Windows", "Trade": "Windows"},
         {"Room": "Living", "Component": "GPO", "Trade": "Electrical"},
         {"Room": "Living", "Component": "Light Fixtures", "Trade": "Electrical"},
-        # Add more mappings as needed - truncated for brevity
+        {"Room": "Dining & Living Room Area", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Dining & Living Room Area", "Component": "Flooring", "Trade": "Flooring - Timber"},
+        {"Room": "Dining & Living Room Area", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Dining & Living Room Area", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Dining & Living Room Area", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Dining & Living Room Area", "Component": "Walls", "Trade": "Painting"},
+        {"Room": "Bedroom 1", "Component": "Carpets", "Trade": "Flooring - Carpets"},
+        {"Room": "Bedroom 1", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Bedroom 1", "Component": "Doors", "Trade": "Doors"},
+        {"Room": "Bedroom 1", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Bedroom 1", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Bedroom 1", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
+        {"Room": "Bedroom 1", "Component": "Windows", "Trade": "Windows"},
+        {"Room": "Bedroom 2", "Component": "Carpets", "Trade": "Flooring - Carpets"},
+        {"Room": "Bedroom 2", "Component": "Ceiling", "Trade": "Painting"},
+        {"Room": "Bedroom 2", "Component": "Doors", "Trade": "Doors"},
+        {"Room": "Bedroom 2", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Bedroom 2", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Bedroom 2", "Component": "Wardrobe", "Trade": "Carpentry & Joinery"},
+        {"Room": "Bedroom 2", "Component": "Windows", "Trade": "Windows"},
+        {"Room": "Laundry Room", "Component": "Cold/Hot Water Outlets", "Trade": "Plumbing"},
+        {"Room": "Laundry Room", "Component": "Doors", "Trade": "Doors"},
+        {"Room": "Laundry Room", "Component": "Drainage", "Trade": "Plumbing"},
+        {"Room": "Laundry Room", "Component": "Exhaust Fan", "Trade": "Electrical"},
+        {"Room": "Laundry Room", "Component": "GPO", "Trade": "Electrical"},
+        {"Room": "Laundry Room", "Component": "Laundry Sink", "Trade": "Plumbing"},
+        {"Room": "Laundry Room", "Component": "Light Fixtures", "Trade": "Electrical"},
+        {"Room": "Laundry Room", "Component": "Skirting", "Trade": "Carpentry & Joinery"},
+        {"Room": "Laundry Room", "Component": "Tiles", "Trade": "Flooring - Tiles"},
+        {"Room": "Laundry Room", "Component": "Walls", "Trade": "Painting"}
+        # Add more mappings as needed - this is a subset for demonstration
     ]
     return pd.DataFrame(mapping_data)
 
@@ -189,6 +208,626 @@ def get_available_trades():
         "Landscaping",
         "Fencing"
     ]
+
+def process_inspection_data(df, trade_mapping):
+    """Process inspection data using enhanced logic"""
+    
+    # Extract unit number
+    if "Lot Details_Lot Number" in df.columns and df["Lot Details_Lot Number"].notna().any():
+        df["Unit"] = df["Lot Details_Lot Number"].astype(str).str.strip()
+    elif "Title Page_Lot number" in df.columns and df["Title Page_Lot number"].notna().any():
+        df["Unit"] = df["Title Page_Lot number"].astype(str).str.strip()
+    else:
+        def extract_unit(audit_name):
+            parts = str(audit_name).split("/")
+            if len(parts) >= 3:
+                candidate = parts[1].strip()
+                if len(candidate) <= 6 and any(ch.isdigit() for ch in candidate):
+                    return candidate
+            return f"Unit_{hash(str(audit_name)) % 1000}"  # Fallback unit number
+        df["Unit"] = df["auditName"].apply(extract_unit) if "auditName" in df.columns else [f"Unit_{i}" for i in range(1, len(df) + 1)]
+
+    # Derive unit type
+    def derive_unit_type(row):
+        unit_type = str(row.get("Pre-Settlement Inspection_Unit Type", "")).strip()
+        townhouse_type = str(row.get("Pre-Settlement Inspection_Townhouse Type", "")).strip()
+        apartment_type = str(row.get("Pre-Settlement Inspection_Apartment Type", "")).strip()
+        
+        if unit_type.lower() == "townhouse":
+            return f"{townhouse_type} Townhouse" if townhouse_type else "Townhouse"
+        elif unit_type.lower() == "apartment":
+            return f"{apartment_type} Apartment" if apartment_type else "Apartment"
+        elif unit_type:
+            return unit_type
+        else:
+            return "Unknown Type"
+
+    df["UnitType"] = df.apply(derive_unit_type, axis=1)
+
+    # Get inspection columns
+    inspection_cols = [
+        c for c in df.columns if c.startswith("Pre-Settlement Inspection_") and not c.endswith("_notes")
+    ]
+
+    if not inspection_cols:
+        # Fallback: look for any columns that might contain inspection data
+        inspection_cols = [c for c in df.columns if any(keyword in c.lower() for keyword in 
+                          ['inspection', 'check', 'item', 'defect', 'issue', 'status'])]
+
+    # Melt to long format
+    long_df = df.melt(
+        id_vars=["Unit", "UnitType"],
+        value_vars=inspection_cols,
+        var_name="InspectionItem",
+        value_name="Status"
+    )
+
+    # Split into Room and Component
+    parts = long_df["InspectionItem"].str.split("_", n=2, expand=True)
+    if len(parts.columns) >= 3:
+        long_df["Room"] = parts[1]
+        long_df["Component"] = parts[2].str.replace(r"\.\d+$", "", regex=True)
+        long_df["Component"] = long_df["Component"].apply(lambda x: x.split("_")[-1] if isinstance(x, str) else x)
+    else:
+        # Fallback parsing
+        long_df["Room"] = "General"
+        long_df["Component"] = long_df["InspectionItem"].str.replace("Pre-Settlement Inspection_", "")
+
+    # Remove metadata rows
+    metadata_rooms = ["Unit Type", "Building Type", "Townhouse Type", "Apartment Type"]
+    metadata_components = ["Room Type"]
+    long_df = long_df[~long_df["Room"].isin(metadata_rooms)]
+    long_df = long_df[~long_df["Component"].isin(metadata_components)]
+
+    # Classify status
+    def classify_status(val):
+        if pd.isna(val):
+            return "Blank"
+        val_str = str(val).strip().lower()
+        if val_str in ["✓", "✔", "ok", "pass", "passed", "good", "satisfactory"]:
+            return "OK"
+        elif val_str in ["✗", "✘", "x", "fail", "failed", "not ok", "defect", "issue"]:
+            return "Not OK"
+        elif val_str == "":
+            return "Blank"
+        else:
+            return "Not OK"  # Conservative approach - treat unclear as defect
+
+    long_df["StatusClass"] = long_df["Status"].apply(classify_status)
+
+    # Merge with trade mapping
+    merged = long_df.merge(trade_mapping, on=["Room", "Component"], how="left")
+    
+    # Fill missing trades with "Unknown Trade"
+    merged["Trade"] = merged["Trade"].fillna("Unknown Trade")
+    
+    final_df = merged[["Unit", "UnitType", "Room", "Component", "StatusClass", "Trade"]]
+    
+    return final_df, df
+
+def calculate_comprehensive_metrics(final_df, df):
+    """Calculate comprehensive inspection metrics"""
+    
+    defects_only = final_df[final_df["StatusClass"] == "Not OK"]
+    
+    # Extract building information
+    sample_audit = df["auditName"].dropna().iloc[0] if "auditName" in df.columns and len(df["auditName"].dropna()) > 0 else ""
+    if sample_audit:
+        audit_parts = str(sample_audit).split("/")
+        building_name = audit_parts[2].strip() if len(audit_parts) >= 3 else "Unknown Building"
+        inspection_date = audit_parts[0].strip() if len(audit_parts) >= 1 else "Unknown Date"
+    else:
+        building_name = "Unknown Building"
+        inspection_date = datetime.now().strftime("%Y-%m-%d")
+    
+    # Address information
+    location = ""
+    area = ""
+    region = ""
+    
+    if "Title Page_Site conducted_Location" in df.columns:
+        location = df["Title Page_Site conducted_Location"].dropna().astype(str).str.strip().iloc[0] if len(df["Title Page_Site conducted_Location"].dropna()) > 0 else ""
+    if "Title Page_Site conducted_Area" in df.columns:
+        area = df["Title Page_Site conducted_Area"].dropna().astype(str).str.strip().iloc[0] if len(df["Title Page_Site conducted_Area"].dropna()) > 0 else ""
+    if "Title Page_Site conducted_Region" in df.columns:
+        region = df["Title Page_Site conducted_Region"].dropna().astype(str).str.strip().iloc[0] if len(df["Title Page_Site conducted_Region"].dropna()) > 0 else ""
+    
+    address_parts = [part for part in [location, area, region] if part]
+    address = ", ".join(address_parts) if address_parts else "Address Not Available"
+    
+    # Calculate basic metrics
+    unit_types = sorted(df["UnitType"].dropna().unique())
+    unit_types_str = ", ".join(unit_types) if unit_types else "Unknown"
+    total_units = df["Unit"].nunique()
+    total_inspections = len(final_df)
+    total_defects = len(defects_only)
+    defect_rate = (total_defects / total_inspections * 100) if total_inspections > 0 else 0
+    avg_defects_per_unit = (total_defects / total_units) if total_units > 0 else 0
+
+    # Calculate settlement readiness
+    defect_counts = defects_only.groupby("Unit").size()
+    ready_units = (defect_counts <= 2).sum()
+    minor_work_units = ((defect_counts >= 3) & (defect_counts <= 7)).sum()
+    major_work_units = ((defect_counts >= 8) & (defect_counts <= 15)).sum()
+    extensive_work_units = (defect_counts > 15).sum()
+
+    # Add units with zero defects to ready category
+    units_with_defects = set(defect_counts.index)
+    all_units = set(df["Unit"].dropna())
+    units_with_no_defects = len(all_units - units_with_defects)
+    ready_units += units_with_no_defects
+
+    # Calculate percentages
+    ready_pct = (ready_units / total_units * 100) if total_units > 0 else 0
+    minor_pct = (minor_work_units / total_units * 100) if total_units > 0 else 0
+    major_pct = (major_work_units / total_units * 100) if total_units > 0 else 0
+    extensive_pct = (extensive_work_units / total_units * 100) if total_units > 0 else 0
+
+    # Generate summary reports
+    summary_trade = defects_only.groupby("Trade").size().reset_index(name="DefectCount").sort_values("DefectCount", ascending=False)
+    summary_unit = defects_only.groupby("Unit").size().reset_index(name="DefectCount").sort_values("DefectCount", ascending=False)
+    summary_room = defects_only.groupby("Room").size().reset_index(name="DefectCount").sort_values("DefectCount", ascending=False)
+    summary_unit_trade = defects_only.groupby(["Unit", "Trade"]).size().reset_index(name="DefectCount")
+    summary_room_comp = defects_only.groupby(["Room", "Component"]).size().reset_index(name="DefectCount").sort_values("DefectCount", ascending=False)
+    
+    return {
+        "building_name": building_name,
+        "inspection_date": inspection_date,
+        "address": address,
+        "unit_types_str": unit_types_str,
+        "total_units": total_units,
+        "total_inspections": total_inspections,
+        "total_defects": total_defects,
+        "defect_rate": defect_rate,
+        "avg_defects_per_unit": avg_defects_per_unit,
+        "ready_units": ready_units,
+        "minor_work_units": minor_work_units,
+        "major_work_units": major_work_units,
+        "extensive_work_units": extensive_work_units,
+        "ready_pct": ready_pct,
+        "minor_pct": minor_pct,
+        "major_pct": major_pct,
+        "extensive_pct": extensive_pct,
+        "summary_trade": summary_trade,
+        "summary_unit": summary_unit,
+        "summary_room": summary_room,
+        "summary_unit_trade": summary_unit_trade,
+        "summary_room_comp": summary_room_comp,
+        "defects_only": defects_only
+    }
+
+def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_breakdown, executive_summary):
+    """Generate the enhanced Excel report with beautiful formatting"""
+    
+    excel_buffer = BytesIO()
+    
+    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+        workbook = writer.book
+        
+        # Define all your enhanced formats
+        building_info_header = workbook.add_format({
+            'bold': True, 'font_size': 14, 'bg_color': '#2E7D32', 'font_color': 'white',
+            'align': 'center', 'valign': 'vcenter', 'border': 2, 'border_color': '#1B5E20'
+        })
+        
+        inspection_summary_header = workbook.add_format({
+            'bold': True, 'font_size': 14, 'bg_color': '#1976D2', 'font_color': 'white',
+            'align': 'center', 'valign': 'vcenter', 'border': 2, 'border_color': '#0D47A1'
+        })
+        
+        settlement_header = workbook.add_format({
+            'bold': True, 'font_size': 14, 'bg_color': '#F57C00', 'font_color': 'white',
+            'align': 'center', 'valign': 'vcenter', 'border': 2, 'border_color': '#E65100'
+        })
+        
+        problem_trades_header = workbook.add_format({
+            'bold': True, 'font_size': 14, 'bg_color': '#7B1FA2', 'font_color': 'white',
+            'align': 'center', 'valign': 'vcenter', 'border': 2, 'border_color': '#4A148C'
+        })
+        
+        label_format = workbook.add_format({
+            'bold': True, 'font_size': 11, 'bg_color': '#F5F5F5', 'border': 1,
+            'border_color': '#BDBDBD', 'align': 'left', 'valign': 'vcenter'
+        })
+        
+        data_format = workbook.add_format({
+            'font_size': 11, 'border': 1, 'border_color': '#BDBDBD',
+            'align': 'right', 'valign': 'vcenter'
+        })
+        
+        # Settlement readiness formats with colors
+        ready_format = workbook.add_format({
+            'font_size': 11, 'border': 1, 'border_color': '#BDBDBD',
+            'bg_color': '#E8F5E8', 'align': 'left', 'valign': 'vcenter'
+        })
+        
+        minor_format = workbook.add_format({
+            'font_size': 11, 'border': 1, 'border_color': '#BDBDBD',
+            'bg_color': '#FFF3E0', 'align': 'left', 'valign': 'vcenter'
+        })
+        
+        major_format = workbook.add_format({
+            'font_size': 11, 'border': 1, 'border_color': '#BDBDBD',
+            'bg_color': '#FFE0B2', 'align': 'left', 'valign': 'vcenter'
+        })
+        
+        extensive_format = workbook.add_format({
+            'font_size': 11, 'border': 1, 'border_color': '#BDBDBD',
+            'bg_color': '#FFEBEE', 'align': 'left', 'valign': 'vcenter'
+        })
+        
+        # Create Executive Dashboard
+        worksheet = workbook.add_worksheet("📊 Executive Dashboard")
+        worksheet.set_column('A:A', 25)
+        worksheet.set_column('B:B', 35)
+        
+        current_row = 0
+        
+        # Building Information Section
+        worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '🏢 BUILDING INFORMATION', building_info_header)
+        current_row += 2
+        
+        building_data = [
+            ('Building Name', metrics['building_name']),
+            ('Inspection Date', metrics['inspection_date']),
+            ('Address', metrics['address']),
+            ('Total Units Inspected', f"{metrics['total_units']:,}"),
+            ('Unit Types', metrics['unit_types_str'])
+        ]
+        
+        for label, value in building_data:
+            worksheet.write(current_row, 0, label, label_format)
+            worksheet.write(current_row, 1, value, data_format)
+            current_row += 1
+        
+        current_row += 1
+        
+        # Inspection Summary Section
+        worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '📋 INSPECTION SUMMARY', inspection_summary_header)
+        current_row += 2
+        
+        summary_data = [
+            ('Total Inspection Points', f"{metrics['total_inspections']:,}"),
+            ('Total Defects Found', f"{metrics['total_defects']:,}"),
+            ('Overall Defect Rate', f"{metrics['defect_rate']:.2f}%"),
+            ('Average Defects per Unit', f"{metrics['avg_defects_per_unit']:.1f}")
+        ]
+        
+        for label, value in summary_data:
+            worksheet.write(current_row, 0, label, label_format)
+            worksheet.write(current_row, 1, value, data_format)
+            current_row += 1
+        
+        current_row += 1
+        
+        # Settlement Readiness Section
+        worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '🏠 SETTLEMENT READINESS', settlement_header)
+        current_row += 2
+        
+        readiness_data = [
+            ('🟢 Ready (0-2 defects)', f"{metrics['ready_units']} units ({metrics['ready_pct']:.1f}%)", ready_format),
+            ('🟡 Minor work (3-7 defects)', f"{metrics['minor_work_units']} units ({metrics['minor_pct']:.1f}%)", minor_format),
+            ('🟠 Major work (8-15 defects)', f"{metrics['major_work_units']} units ({metrics['major_pct']:.1f}%)", major_format),
+            ('🔴 Extensive work (15+ defects)', f"{metrics['extensive_work_units']} units ({metrics['extensive_pct']:.1f}%)", extensive_format)
+        ]
+        
+        for label, value, format_style in readiness_data:
+            worksheet.write(current_row, 0, label, format_style)
+            worksheet.write(current_row, 1, value, format_style)
+            current_row += 1
+        
+        current_row += 1
+        
+        # Top Problem Trades Section
+        worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', '⚠️ TOP PROBLEM TRADES', problem_trades_header)
+        current_row += 2
+        
+        top_trades = metrics['summary_trade'].head(5)
+        for i, (_, row) in enumerate(top_trades.iterrows(), 1):
+            trade_name = row['Trade'] if pd.notna(row['Trade']) else 'Unknown Trade'
+            defect_count = row['DefectCount']
+            
+            # Create gradient colors for top trades
+            colors = ['#FFCDD2', '#FFE0B2', '#FFF9C4', '#E1F5FE', '#F3E5F5']
+            color = colors[min(i-1, len(colors)-1)]
+            
+            trade_format = workbook.add_format({
+                'font_size': 11, 'border': 1, 'border_color': '#BDBDBD',
+                'bg_color': color, 'align': 'left', 'valign': 'vcenter', 'bold': True
+            })
+            
+            worksheet.write(current_row, 0, f'{i}. {trade_name}', trade_format)
+            worksheet.write(current_row, 1, f'{defect_count} defects', trade_format)
+            current_row += 1
+        
+        current_row += 2
+        
+        # Report Generation Info
+        report_format = workbook.add_format({
+            'font_size': 10, 'italic': True, 'border': 1, 'border_color': '#9E9E9E',
+            'bg_color': '#FAFAFA', 'align': 'center'
+        })
+        
+        worksheet.write(current_row, 0, 'Report Generated', label_format)
+        worksheet.write(current_row, 1, datetime.now().strftime("%m/%d/%Y, %I:%M:%S %p"), report_format)
+        
+        # Add detailed data sheets
+        header_format = workbook.add_format({
+            'bold': True, 'bg_color': '#2E7D32', 'font_color': 'white',
+            'border': 1, 'align': 'center'
+        })
+        
+        # All Inspections Sheet
+        final_df.to_excel(writer, sheet_name="📋 All Inspections", index=False)
+        ws_all = writer.sheets["📋 All Inspections"]
+        for col_num, value in enumerate(final_df.columns.values):
+            ws_all.write(0, col_num, value, header_format)
+        
+        # Defects Only Sheet
+        if len(metrics['defects_only']) > 0:
+            metrics['defects_only'].to_excel(writer, sheet_name="🔍 Defects Only", index=False)
+            ws_defects = writer.sheets["🔍 Defects Only"]
+            for col_num, value in enumerate(metrics['defects_only'].columns.values):
+                ws_defects.write(0, col_num, value, header_format)
+        
+        # Summary sheets if detailed breakdown is requested
+        if detailed_breakdown:
+            summary_sheets = [
+                (metrics['summary_trade'], "📊 By Trade"),
+                (metrics['summary_unit'], "🏠 By Unit"),
+                (metrics['summary_room'], "🚪 By Room"),
+                (metrics['summary_unit_trade'], "🏠📊 By Unit & Trade"),
+                (metrics['summary_room_comp'], "🚪🔧 By Room & Component")
+            ]
+            
+            for summary_data, sheet_name in summary_sheets:
+                if len(summary_data) > 0:
+                    summary_data.to_excel(writer, sheet_name=sheet_name, index=False)
+                    ws = writer.sheets[sheet_name]
+                    
+                    # Format headers
+                    for col_num, value in enumerate(summary_data.columns.values):
+                        ws.write(0, col_num, value, header_format)
+                    
+                    # Auto-adjust column widths
+                    for i, col in enumerate(summary_data.columns):
+                        max_length = max(
+                            summary_data[col].astype(str).str.len().max(),
+                            len(str(col))
+                        )
+                        ws.set_column(i, i, min(max_length + 2, 50))
+    
+    excel_buffer.seek(0)
+    return excel_buffer
+
+def display_comprehensive_results(metrics, excel_buffer, original_filename):
+    """Display comprehensive processing results"""
+    
+    st.markdown("---")
+    st.markdown("## 🎉 Processing Complete!")
+    
+    # Success message with building info
+    st.markdown(f"""
+    <div class="success-message">
+        <h3>✅ Inspection Report Generated Successfully!</h3>
+        <p><strong>🏢 Building:</strong> {metrics['building_name']}</p>
+        <p><strong>📅 Inspection Date:</strong> {metrics['inspection_date']}</p>
+        <p><strong>📄 Source File:</strong> {original_filename}</p>
+        <p><strong>⏰ Processing Time:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Key metrics in a beautiful layout
+    st.markdown("### 📊 Key Metrics")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value">{metrics['total_units']:,}</div>
+            <div class="metric-label">🏠 Total Units</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value">{metrics['total_defects']:,}</div>
+            <div class="metric-label">⚠️ Total Defects</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value">{metrics['defect_rate']:.1f}%</div>
+            <div class="metric-label">📊 Defect Rate</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value">{metrics['avg_defects_per_unit']:.1f}</div>
+            <div class="metric-label">📈 Avg per Unit</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Settlement readiness in beautiful cards
+    st.markdown("### 🏠 Settlement Readiness Analysis")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="readiness-card ready">
+            <h4>🟢 Ready</h4>
+            <p><strong>{metrics['ready_units']}</strong> units</p>
+            <small>({metrics['ready_pct']:.1f}%) • 0-2 defects</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="readiness-card minor">
+            <h4>🟡 Minor Work</h4>
+            <p><strong>{metrics['minor_work_units']}</strong> units</p>
+            <small>({metrics['minor_pct']:.1f}%) • 3-7 defects</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="readiness-card major">
+            <h4>🟠 Major Work</h4>
+            <p><strong>{metrics['major_work_units']}</strong> units</p>
+            <small>({metrics['major_pct']:.1f}%) • 8-15 defects</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div class="readiness-card extensive">
+            <h4>🔴 Extensive Work</h4>
+            <p><strong>{metrics['extensive_work_units']}</strong> units</p>
+            <small>({metrics['extensive_pct']:.1f}%) • 15+ defects</small>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Top problem trades
+    if len(metrics['summary_trade']) > 0:
+        st.markdown("### ⚠️ Top Problem Trades")
+        
+        for i, (_, row) in enumerate(metrics['summary_trade'].head(5).iterrows(), 1):
+            trade_name = row['Trade'] if pd.notna(row['Trade']) else 'Unknown Trade'
+            defect_count = row['DefectCount']
+            
+            # Color coding based on ranking
+            colors = ["#ff4444", "#ff8800", "#ffcc00", "#88cc00", "#44cc44"]
+            color = colors[min(i-1, len(colors)-1)]
+            
+            st.markdown(f"""
+            <div class="trade-item" style="border-left-color: {color};">
+                <strong>{i}. {trade_name}</strong>
+                <span style="float: right; background: {color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.9em;">
+                    {defect_count} defects
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Charts and visualization
+    if len(metrics['summary_trade']) > 0:
+        st.markdown("### 📈 Visual Analysis")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### Defects by Trade")
+            chart_data = metrics['summary_trade'].head(10)
+            st.bar_chart(chart_data.set_index('Trade')['DefectCount'])
+        
+        with col2:
+            st.markdown("#### Settlement Readiness Distribution")
+            readiness_data = pd.DataFrame({
+                'Category': ['Ready', 'Minor Work', 'Major Work', 'Extensive Work'],
+                'Units': [metrics['ready_units'], metrics['minor_work_units'], 
+                         metrics['major_work_units'], metrics['extensive_work_units']]
+            })
+            st.bar_chart(readiness_data.set_index('Category')['Units'])
+    
+    # Download section
+    st.markdown("### 📥 Download Your Report")
+    
+    filename = f"{metrics['building_name'].replace(' ', '_')}_Inspection_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        st.download_button(
+            label="📊 Download Complete Excel Report",
+            data=excel_buffer,
+            file_name=filename,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+    
+    with col2:
+        st.metric("📄 File Size", f"{len(excel_buffer.getvalue()) / 1024:.1f} KB")
+    
+    # Report contents summary
+    st.markdown("#### 📋 What's in Your Report:")
+    st.markdown("""
+    - **📊 Executive Dashboard** - Key metrics and visual summary
+    - **📋 All Inspections** - Complete detailed data
+    - **🔍 Defects Only** - Filtered view of issues found
+    - **📊 By Trade** - Defects grouped by trade category
+    - **🏠 By Unit** - Unit-specific defect summaries
+    - **🚪 By Room** - Room-specific analysis
+    - **🔧 Multiple Views** - Various data perspectives for analysis
+    """)
+    
+    st.success("🎉 Your professional inspection report is ready! The Excel file contains multiple worksheets with comprehensive analysis and beautiful formatting.")
+
+def process_inspection_file(uploaded_file, trade_mapping, include_charts, detailed_breakdown, executive_summary, notification_email):
+    """Process the inspection file using the current trade mapping"""
+    
+    # Create progress bar
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    try:
+        # Step 1: Read uploaded file
+        status_text.text("📖 Reading uploaded file...")
+        progress_bar.progress(10)
+        
+        df = pd.read_csv(uploaded_file)
+        st.success(f"✅ Loaded {len(df)} rows from inspection file: {uploaded_file.name}")
+        
+        # Step 2: Process the data using the provided trade mapping
+        status_text.text("🔄 Processing inspection data with trade mapping...")
+        progress_bar.progress(40)
+        
+        # Your enhanced processing logic
+        final_df, processed_df = process_inspection_data(df, trade_mapping)
+        
+        progress_bar.progress(60)
+        
+        # Step 3: Calculate metrics
+        status_text.text("📊 Calculating metrics and generating insights...")
+        
+        metrics = calculate_comprehensive_metrics(final_df, processed_df)
+        
+        progress_bar.progress(80)
+        
+        # Step 4: Generate Excel report
+        status_text.text("📈 Generating beautiful Excel report...")
+        
+        excel_buffer = generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_breakdown, executive_summary)
+        
+        progress_bar.progress(100)
+        status_text.text("✅ Processing completed successfully!")
+        
+        # Display results
+        display_comprehensive_results(metrics, excel_buffer, uploaded_file.name)
+        
+        # Optional email notification
+        if notification_email and notification_email.strip():
+            st.info(f"📧 Email notification would be sent to: {notification_email}")
+        
+    except Exception as e:
+        st.error(f"❌ Error processing file: {str(e)}")
+        st.exception(e)
+        
+        # Show helpful troubleshooting tips
+        st.markdown("### 🔧 Troubleshooting Tips")
+        st.markdown("""
+        - **Check file format**: Ensure it's a valid CSV file from iAuditor
+        - **Check file size**: Very large files may take longer to process
+        - **Check column names**: Ensure the CSV has the expected iAuditor column structure
+        - **Try a different file**: Test with a smaller or different inspection file
+        """)
+
+# Navigation tabs
+tab1, tab2, tab3 = st.tabs(["📤 Upload & Process", "🗺️ Manage Trade Mapping", "📊 View Reports"])
 
 with tab2:
     st.markdown("## 🗺️ Trade Mapping Management")
@@ -261,10 +900,10 @@ with tab2:
         with col1:
             st.metric("Total Mappings", len(st.session_state.trade_mapping))
         with col2:
-            unique_rooms = st.session_state.trade_mapping['Room'].nunique()
+            unique_rooms = st.session_state.trade_mapping['Room'].nunique() if len(st.session_state.trade_mapping) > 0 else 0
             st.metric("Unique Rooms", unique_rooms)
         with col3:
-            unique_trades = st.session_state.trade_mapping['Trade'].nunique()
+            unique_trades = st.session_state.trade_mapping['Trade'].nunique() if len(st.session_state.trade_mapping) > 0 else 0
             st.metric("Trade Categories", unique_trades)
         with col4:
             if st.session_state.mapping_edited:
@@ -272,78 +911,32 @@ with tab2:
             else:
                 st.info("📝 Ready")
         
-        # Filter and search options
-        st.markdown("#### 🔍 Filter & Search")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            room_filter = st.selectbox(
-                "Filter by Room",
-                ["All Rooms"] + sorted(st.session_state.trade_mapping['Room'].unique().tolist()),
-                key="room_filter"
-            )
-        
-        with col2:
-            trade_filter = st.selectbox(
-                "Filter by Trade",
-                ["All Trades"] + sorted(st.session_state.trade_mapping['Trade'].unique().tolist()),
-                key="trade_filter"
-            )
-        
-        with col3:
-            search_term = st.text_input(
-                "Search Components",
-                placeholder="Type to search...",
-                key="component_search"
-            )
-        
-        # Apply filters
-        filtered_mapping = st.session_state.trade_mapping.copy()
-        
-        if room_filter != "All Rooms":
-            filtered_mapping = filtered_mapping[filtered_mapping['Room'] == room_filter]
-        
-        if trade_filter != "All Trades":
-            filtered_mapping = filtered_mapping[filtered_mapping['Trade'] == trade_filter]
-        
-        if search_term:
-            filtered_mapping = filtered_mapping[
-                filtered_mapping['Component'].str.contains(search_term, case=False, na=False)
-            ]
-        
-        # Display current mapping with edit capability
-        st.markdown("#### 📋 Current Mapping")
-        st.info(f"Showing {len(filtered_mapping)} of {len(st.session_state.trade_mapping)} total mappings")
-        
-        # Editable dataframe
-        edited_mapping = st.data_editor(
-            filtered_mapping,
-            use_container_width=True,
-            num_rows="dynamic",
-            column_config={
-                "Room": st.column_config.TextColumn("Room", width="medium"),
-                "Component": st.column_config.TextColumn("Component", width="large"),
-                "Trade": st.column_config.SelectboxColumn(
-                    "Trade",
-                    options=get_available_trades(),
-                    width="medium"
-                )
-            },
-            key="mapping_editor"
-        )
-        
-        # Update session state if changes were made
-        if not edited_mapping.equals(filtered_mapping):
-            # Update the full mapping with the edited subset
-            if room_filter == "All Rooms" and trade_filter == "All Trades" and not search_term:
-                st.session_state.trade_mapping = edited_mapping
-            else:
-                # More complex update needed for filtered view
-                # This is a simplified approach - in production you'd want more sophisticated handling
-                st.session_state.trade_mapping = edited_mapping
+        # Simple editable dataframe
+        if len(st.session_state.trade_mapping) > 0:
+            st.markdown("#### 📋 Current Mapping")
             
-            st.session_state.mapping_edited = True
-            st.success("✅ Mapping updated!")
+            # Editable dataframe
+            edited_mapping = st.data_editor(
+                st.session_state.trade_mapping,
+                use_container_width=True,
+                num_rows="dynamic",
+                column_config={
+                    "Room": st.column_config.TextColumn("Room", width="medium"),
+                    "Component": st.column_config.TextColumn("Component", width="large"),
+                    "Trade": st.column_config.SelectboxColumn(
+                        "Trade",
+                        options=get_available_trades(),
+                        width="medium"
+                    )
+                },
+                key="mapping_editor"
+            )
+            
+            # Update session state if changes were made
+            if not edited_mapping.equals(st.session_state.trade_mapping):
+                st.session_state.trade_mapping = edited_mapping
+                st.session_state.mapping_edited = True
+                st.success("✅ Mapping updated!")
         
         # Add new mapping entry
         st.markdown("#### ➕ Add New Mapping")
@@ -375,79 +968,6 @@ with tab2:
                         st.rerun()
                     else:
                         st.error("❌ Please fill in all fields")
-        
-        # Bulk operations
-        st.markdown("#### 🔧 Bulk Operations")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.markdown("**Import from CSV Text**")
-            csv_text = st.text_area(
-                "Paste CSV data",
-                placeholder="Room,Component,Trade\nKitchen,Cabinets,Carpentry & Joinery",
-                height=100
-            )
-            if st.button("📥 Import CSV Text"):
-                if csv_text.strip():
-                    try:
-                        imported_df = pd.read_csv(StringIO(csv_text))
-                        if all(col in imported_df.columns for col in ['Room', 'Component', 'Trade']):
-                            st.session_state.trade_mapping = pd.concat([
-                                st.session_state.trade_mapping, imported_df
-                            ], ignore_index=True).drop_duplicates()
-                            st.session_state.mapping_edited = True
-                            st.success(f"✅ Imported {len(imported_df)} mappings")
-                            st.rerun()
-                        else:
-                            st.error("❌ CSV must have columns: Room, Component, Trade")
-                    except Exception as e:
-                        st.error(f"❌ Error importing: {str(e)}")
-        
-        with col2:
-            st.markdown("**Bulk Trade Update**")
-            selected_room = st.selectbox(
-                "Select Room", 
-                st.session_state.trade_mapping['Room'].unique(),
-                key="bulk_room"
-            )
-            new_trade_bulk = st.selectbox(
-                "New Trade", 
-                get_available_trades(),
-                key="bulk_trade"
-            )
-            if st.button("🔄 Update All Components"):
-                mask = st.session_state.trade_mapping['Room'] == selected_room
-                st.session_state.trade_mapping.loc[mask, 'Trade'] = new_trade_bulk
-                st.session_state.mapping_edited = True
-                count = mask.sum()
-                st.success(f"✅ Updated {count} components in {selected_room}")
-        
-        with col3:
-            st.markdown("**Remove Duplicates**")
-            current_count = len(st.session_state.trade_mapping)
-            if st.button("🧹 Clean Duplicates"):
-                st.session_state.trade_mapping = st.session_state.trade_mapping.drop_duplicates()
-                new_count = len(st.session_state.trade_mapping)
-                removed = current_count - new_count
-                if removed > 0:
-                    st.success(f"✅ Removed {removed} duplicate entries")
-                    st.session_state.mapping_edited = True
-                else:
-                    st.info("ℹ️ No duplicates found")
-        
-        # Preview trade distribution
-        st.markdown("#### 📊 Trade Distribution")
-        if len(st.session_state.trade_mapping) > 0:
-            trade_counts = st.session_state.trade_mapping['Trade'].value_counts()
-            
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                st.bar_chart(trade_counts)
-            
-            with col2:
-                st.markdown("**Top Trade Categories:**")
-                for trade, count in trade_counts.head(5).items():
-                    st.markdown(f"• **{trade}**: {count} items")
 
 with tab1:
     # Sidebar for options
@@ -477,9 +997,9 @@ with tab1:
         with col1:
             st.metric("Mappings Loaded", len(st.session_state.trade_mapping))
         with col2:
-            st.metric("Trade Categories", st.session_state.trade_mapping['Trade'].nunique())
+            st.metric("Trade Categories", st.session_state.trade_mapping['Trade'].nunique() if len(st.session_state.trade_mapping) > 0 else 0)
         with col3:
-            st.metric("Room Types", st.session_state.trade_mapping['Room'].nunique())
+            st.metric("Room Types", st.session_state.trade_mapping['Room'].nunique() if len(st.session_state.trade_mapping) > 0 else 0)
     
     # File upload
     st.markdown("### 📋 Upload Inspection File")
@@ -529,46 +1049,13 @@ with tab3:
     - 🔔 **Alert System** - Notifications for critical issues
     """)
 
-def process_inspection_file(uploaded_file, trade_mapping, include_charts, detailed_breakdown, executive_summary, notification_email):
-    """Process the inspection file using the current trade mapping"""
-    
-    # Create progress bar
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    try:
-        # Step 1: Read uploaded file
-        status_text.text("📖 Reading uploaded file...")
-        progress_bar.progress(10)
-        
-        df = pd.read_csv(uploaded_file)
-        st.success(f"✅ Loaded {len(df)} rows from inspection file: {uploaded_file.name}")
-        
-        # Step 2: Show mapping coverage
-        status_text.text("🗺️ Analyzing mapping coverage...")
-        progress_bar.progress(20)
-        
-        # Preview mapping effectiveness (this would be implemented)
-        st.info(f"📊 Using {len(trade_mapping)} trade mappings for processing")
-        
-        progress_bar.progress(100)
-        status_text.text("✅ Ready for processing!")
-        
-        st.success("🎉 File uploaded successfully! Processing logic would continue here...")
-        
-        # The rest of your processing logic would go here
-        # (Same as in previous versions)
-        
-    except Exception as e:
-        st.error(f"❌ Error processing file: {str(e)}")
-
 # Footer
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; font-size: 0.9em; padding: 2rem;">
     <h4>🏢 Inspection Report Processor with Interactive Mapping</h4>
     <p>Professional inspection report processing with customizable trade mapping</p>
-    <p>✅ Interactive mapping editor | ✅ Real-time preview | ✅ Bulk operations</p>
+    <p>✅ Interactive mapping editor | ✅ Real-time preview | ✅ Professional reports</p>
     <p>📊 Beautiful Excel reports | 🔄 Fast processing | 📱 Mobile friendly</p>
 </div>
 """, unsafe_allow_html=True)
