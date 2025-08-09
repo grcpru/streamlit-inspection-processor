@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 import xlsxwriter
 from io import BytesIO, StringIO
+import pytz
 
 # Configure the page
 st.set_page_config(
@@ -665,7 +666,10 @@ def generate_enhanced_excel_report(final_df, metrics, include_charts, detailed_b
         
         # Footer
         worksheet.write(current_row, 0, 'Report Generated', label_format)
-        report_time = datetime.now().strftime('%m/%d/%Y, %I:%M:%S %p')
+        # Get Melbourne timezone
+        melbourne_tz = pytz.timezone('Australia/Melbourne')
+        melbourne_time = datetime.now(melbourne_tz)
+        report_time = melbourne_time.strftime('%d/%m/%Y, %I:%M:%S %p AEDT')
         worksheet.write(current_row, 1, report_time, footer_format)
         
         # Add other data sheets
@@ -733,7 +737,7 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
         <p><strong>📅 Inspection Date:</strong> {metrics['inspection_date']}</p>
         <p><strong>📍 Address:</strong> {metrics['address']}</p>
         <p><strong>📄 Source File:</strong> {original_filename}</p>
-        <p><strong>⏰ Processing Time:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+        <p><strong>⏰ Processing Time:</strong> {datetime.now(pytz.timezone('Australia/Melbourne')).strftime('%d/%m/%Y %H:%M:%S AEDT')}</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -821,7 +825,10 @@ def display_comprehensive_results(metrics, excel_buffer, original_filename):
     # Download section
     st.markdown('<div class="section-header">📥 Download Your Professional Report</div>', unsafe_allow_html=True)
     
-    filename = f"{metrics['building_name'].replace(' ', '_')}_Inspection_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    # Get Melbourne timezone for filename
+    melbourne_tz = pytz.timezone('Australia/Melbourne')
+    melbourne_time = datetime.now(melbourne_tz)
+    filename = f"{metrics['building_name'].replace(' ', '_')}_Inspection_Report_{melbourne_time.strftime('%Y%m%d_%H%M%S')}.xlsx"
     
     st.download_button(
         label="📊 Download Complete Excel Report",
