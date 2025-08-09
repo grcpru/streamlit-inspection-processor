@@ -1,180 +1,207 @@
-def load_default_mapping():
-    """Load your exact 266 trade mappings from master data"""
+with tab2:
+    st.markdown("## 🗺️ Trade Mapping Management")
+    st.markdown("Upload your master trade mapping CSV file to get started")
     
-    # Parse the mapping data directly from lists to avoid CSV parsing issues
-    import pandas as pd
+    # Mapping source selection
+    col1, col2 = st.columns([2, 1])
     
-    # Your exact master mapping data - 266 entries as lists
-    rooms = [
-        "Apartment Entry Door", "Apartment Entry Door", "Apartment Entry Door", "Apartment Entry Door",
-        "Apartment SOU Door", "Balcony", "Balcony", "Balcony", "Balcony", "Balcony", "Balcony",
-        "Bathroom", "Bathroom", "Bathroom", "Bathroom", "Bathroom", "Bathroom", "Bathroom",
-        "Bathroom", "Bathroom", "Bathroom", "Bathroom", "Bathroom", "Bathroom",
-        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
-        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
-        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
-        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
-        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
-        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
-        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
-        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
-        "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry", "Bathroom / Laundry",
-        "Bedroom", "Bedroom", "Bedroom", "Bedroom", "Bedroom", "Bedroom", "Bedroom", "Bedroom",
-        "Bedroom", "Bedroom", "Bedroom", "Bedroom", "Bedroom 1", "Bedroom 1", "Bedroom 1",
-        "Bedroom 1", "Bedroom 1", "Bedroom 1", "Bedroom 1", "Bedroom 1", "Bedroom 1", "Bedroom 1",
-        "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite",
-        "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite",
-        "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite",
-        "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite", "Bedroom 1 w/Ensuite",
-        "Bedroom 1 w/Ensuite", "Bedroom 2", "Bedroom 2", "Bedroom 2", "Bedroom 2", "Bedroom 2",
-        "Bedroom 2", "Bedroom 2", "Bedroom 2", "Bedroom 2", "Bedroom 2", "Bedroom 2",
-        "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite",
-        "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite",
-        "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite",
-        "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite", "Bedroom 2 w/Ensuite",
-        "Bedroom 2 w/Ensuite", "Bedroom 3", "Bedroom 3", "Bedroom 3", "Bedroom 3", "Bedroom 3",
-        "Bedroom 3", "Bedroom 3", "Bedroom 3", "Bedroom 3", "Bedroom 3", "Bedroom 3",
-        "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite",
-        "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite",
-        "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite",
-        "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Bedroom w/Ensuite",
-        "Bedroom w/Ensuite", "Bedroom w/Ensuite", "Butler's Pantry", "Butler's Pantry",
-        "Butler's Pantry", "Butler's Pantry", "Butler's Pantry", "Butler's Pantry",
-        "Butler's Pantry (if applicable)", "Butler's Pantry (if applicable)", "Butler's Pantry (if applicable)",
-        "Butler's Pantry (if applicable)", "Butler's Pantry (if applicable)", "Butler's Pantry (if applicable)",
-        "Corridor", "Corridor", "Corridor", "Corridor", "Corridor", "Corridor",
-        "Dining & Living Room Area", "Dining & Living Room Area", "Dining & Living Room Area",
-        "Dining & Living Room Area", "Dining & Living Room Area", "Dining & Living Room Area",
-        "Dining & Living Room Area", "Downstairs Bathroom", "Downstairs Bathroom", "Downstairs Bathroom",
-        "Downstairs Bathroom", "Downstairs Bathroom", "Downstairs Bathroom", "Downstairs Bathroom",
-        "Downstairs Bathroom", "Downstairs Bathroom", "Downstairs Bathroom", "Downstairs Bathroom",
-        "Downstairs Bathroom", "Downstairs Toilet (if applicable)", "Downstairs Toilet (if applicable)",
-        "Downstairs Toilet (if applicable)", "Downstairs Toilet (if applicable)", "Downstairs Toilet (if applicable)",
-        "Downstairs Toilet (if applicable)", "Downstairs Toilet (if applicable)", "Downstairs Toilet (if applicable)",
-        "Downstairs Toilet (if applicable)", "Kitchen Area", "Kitchen Area", "Kitchen Area", "Kitchen Area",
-        "Kitchen Area", "Kitchen Area", "Kitchen Area", "Kitchen Area", "Kitchen Area", "Kitchen Area",
-        "Kitchen Area", "Kitchen Area", "Laundry Room", "Laundry Room", "Laundry Room", "Laundry Room",
-        "Laundry Room", "Laundry Room", "Laundry Room", "Laundry Room", "Laundry Room", "Laundry Room",
-        "Laundry Room", "Laundry Section", "Laundry Section", "Laundry Section", "Laundry Section",
-        "Laundry Section", "Laundry Section", "Laundry Section", "Laundry Section", "Laundry Section",
-        "Laundry Section", "Staircase", "Staircase", "Staircase", "Staircase", "Staircase", "Staircase",
-        "Study Area (if applicable)", "Study Area (if applicable)", "Study Area (if applicable)",
-        "Study Area (if applicable)", "Study Area (if applicable)", "Upstair Corridor", "Upstair Corridor",
-        "Upstair Corridor", "Upstair Corridor", "Upstair Corridor", "Upstairs Bathroom", "Upstairs Bathroom",
-        "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom",
-        "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom", "Upstairs Bathroom",
-        "Upstairs Bathroom"
-    ]
+    with col1:
+        st.markdown("### 📋 Mapping Source")
+        mapping_source = st.radio(
+            "Choose your mapping source:",
+            ["Upload master mapping CSV", "Start with empty mapping", "Use current mapping"],
+            help="Upload your master CSV file with Room, Component, Trade columns"
+        )
     
-    components = [
-        "Door Handle", "Door Locks and Keys", "Paint", "Self Latching", "Fire Compliance Tag",
-        "Balustrade", "Drainage Point", "GPO (if applicable)", "Glass", "Glass Sliding Door", "Tiles",
-        "Bathtub (if applicable)", "Ceiling", "Doors", "Exhaust Fan", "GPO", "Light Fixtures", "Mirror",
-        "Shower", "Sink", "Skirting", "Tiles", "Toilet", "Walls", "Bathroom_Ceiling", "Bathroom_Doors",
-        "Bathroom_Exhaust Fan", "Bathroom_GPO", "Bathroom_Light Fixtures", "Bathroom_Mirror",
-        "Bathroom_Shower", "Bathroom_Sink", "Bathroom_Skirting", "Bathroom_Tiles", "Bathroom_Toilet",
-        "Bathroom_Walls", "Ceiling", "Cold/Hot Water Outlets", "Doors", "Drainage", "Exhaust Fan",
-        "GPO", "Laundry Section_Cold/Hot Water Outlets", "Laundry Section_Doors", "Laundry Section_Drainage",
-        "Laundry Section_Exhaust Fan", "Laundry Section_GPO", "Laundry Section_Laundry Sink",
-        "Laundry Section_Light Fixtures", "Laundry Section_Skirting", "Laundry Section_Tiles",
-        "Laundry Section_Walls", "Laundry Sink (if applicable)", "Light Fixtures", "Mirror", "Shower",
-        "Sink", "Skirting", "Tiles", "Toilet", "Walls", "Laundry Sink", "Carpets", "Ceiling", "Doors",
-        "GPO", "Light Fixtures", "Network Router", "Network Router (if applicable)", "Skirting",
-        "Sliding Glass Door (if applicable)", "Walls", "Wardrobe", "Windows", "Carpets", "Ceiling",
-        "Doors", "GPO", "Light Fixtures", "Network Router (if applicable)", "Skirting", "Walls",
-        "Wardrobe", "Windows", "Bathtub (if applicable)", "Carpets", "Ceiling", "Doors", "Exhaust Fan",
-        "GPO", "Light Fixtures", "Mirror", "Network Router (if applicable)", "Shower", "Sink",
-        "Skirting", "Tiles", "Toilet", "Walls", "Wardrobe", "Windows", "Carpets", "Ceiling", "Doors",
-        "GPO", "Light Fixtures", "Network Router (if applicable)", "Skirting", "Sliding Glass Door (if applicable)",
-        "Walls", "Wardrobe", "Windows", "Bathtub (if applicable)", "Carpets", "Ceiling", "Doors",
-        "Exhaust Fan", "GPO", "Light Fixtures", "Mirror", "Network Router (if applicable)", "Shower",
-        "Sink", "Skirting", "Tiles", "Toilet", "Walls", "Wardrobe", "Windows", "Carpets", "Ceiling",
-        "Doors", "GPO", "Light Fixtures", "Network Router (if applicable)", "Skirting",
-        "Sliding Glass Door (if applicable)", "Walls", "Wardrobe", "Windows", "Bathtub (if applicable)",
-        "Carpets", "Ceiling", "Doors", "Exhaust Fan", "GPO", "Light Fixtures", "Mirror",
-        "Network Router (if applicable)", "Shower", "Sink", "Skirting", "Sliding Glass Door (if applicable)",
-        "Tiles", "Toilet", "Walls", "Wardrobe", "Windows", "Cabinets/Shelving", "Ceiling", "Flooring",
-        "GPO", "Light Fixtures", "Sink", "Cabinets/Shelving", "Ceiling", "Flooring", "GPO",
-        "Light Fixtures", "Sink", "Ceiling", "Flooring", "Intercom", "Light Fixtures", "Skirting",
-        "Walls", "Ceiling", "Flooring", "GPO", "Light Fixtures", "Skirting", "Walls",
-        "Windows (if applicable)", "Ceiling", "Doors", "Exhaust Fan", "GPO", "Light Fixtures", "Mirror",
-        "Shower", "Sink", "Skirting", "Tiles", "Toilet", "Walls", "Ceiling", "Doors", "Exhaust Fan",
-        "Light Fixtures", "Sink", "Skirting", "Tiles", "Toilet", "Walls", "Cabinets", "Ceiling",
-        "Dishwasher", "Dishwasher (if applicable)", "Flooring", "GPO", "Kitchen Sink", "Kitchen Table Tops",
-        "Light Fixtures", "Rangehood", "Splashbacks", "Stovetop and Oven", "Cold/Hot Water Outlets",
-        "Doors", "Drainage", "Exhaust Fan", "GPO", "Laundry Sink", "Light Fixtures", "Skirting",
-        "Tiles", "Walls", "Windows (if applicable)", "Cold/Hot Water Outlets", "Doors", "Drainage",
-        "Exhaust Fan", "GPO", "Laundry Sink", "Light Fixtures", "Skirting", "Tiles", "Walls",
-        "Ceiling", "Light Fixtures", "Railing (if applicable)", "Skirting", "Staircase", "Walls",
-        "Desk", "GPO", "Light Fixtures", "Skirting", "Walls", "Ceiling", "Flooring", "Light Fixtures",
-        "Skirting", "Walls", "Bathtub (if applicable)", "Ceiling", "Doors", "Exhaust Fan", "GPO",
-        "Light Fixtures", "Mirror", "Shower", "Sink", "Skirting", "Tiles", "Toilet", "Walls"
-    ]
+    with col2:
+        st.markdown("### 🔧 Actions")
+        if st.button("🔄 Clear All Mappings"):
+            st.session_state.trade_mapping = pd.DataFrame(columns=['Room', 'Component', 'Trade'])
+            st.session_state.mapping_edited = True
+            st.success("✅ All mappings cleared")
+        
+        if st.button("📥 Download Current Mapping"):
+            if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
+                csv = st.session_state.trade_mapping.to_csv(index=False)
+                st.download_button(
+                    label="💾 Download CSV",
+                    data=csv,
+                    file_name=f"trade_mapping_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.warning("No mapping data to download")
     
-    trades = [
-        "Doors", "Doors", "Painting", "Doors", "Doors", "Carpentry & Joinery", "Plumbing",
-        "Electrical", "Windows", "Windows", "Flooring - Tiles", "Plumbing", "Painting", "Doors",
-        "Electrical", "Electrical", "Electrical", "Carpentry & Joinery", "Plumbing", "Plumbing",
-        "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting", "Painting", "Doors",
-        "Electrical", "Electrical", "Electrical", "Carpentry & Joinery", "Plumbing", "Plumbing",
-        "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting", "Painting", "Plumbing",
-        "Doors", "Plumbing", "Electrical", "Electrical", "Plumbing", "Doors", "Plumbing",
-        "Electrical", "Electrical", "Plumbing", "Electrical", "Carpentry & Joinery",
-        "Flooring - Tiles", "Painting", "Plumbing", "Electrical", "Carpentry & Joinery",
-        "Plumbing", "Plumbing", "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting",
-        "Plumbing", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
-        "Electrical", "Electrical", "Carpentry & Joinery", "Windows", "Painting",
-        "Carpentry & Joinery", "Windows", "Flooring - Carpets", "Painting", "Doors", "Electrical",
-        "Electrical", "Electrical", "Carpentry & Joinery", "Doors", "Carpentry & Joinery",
-        "Windows", "Plumbing", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
-        "Electrical", "Carpentry & Joinery", "Electrical", "Plumbing", "Plumbing",
-        "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting", "Carpentry & Joinery",
-        "Windows", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
-        "Electrical", "Carpentry & Joinery", "Windows", "Painting", "Carpentry & Joinery",
-        "Windows", "Plumbing", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
-        "Electrical", "Carpentry & Joinery", "Electrical", "Plumbing", "Plumbing",
-        "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting", "Carpentry & Joinery",
-        "Windows", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
-        "Electrical", "Carpentry & Joinery", "Windows", "Painting", "Carpentry & Joinery",
-        "Windows", "Plumbing", "Flooring - Carpets", "Painting", "Doors", "Electrical", "Electrical",
-        "Electrical", "Carpentry & Joinery", "Electrical", "Plumbing", "Plumbing",
-        "Carpentry & Joinery", "Windows", "Flooring - Tiles", "Plumbing", "Painting",
-        "Carpentry & Joinery", "Windows", "Carpentry & Joinery", "Painting", "Flooring - Timber",
-        "Electrical", "Electrical", "Plumbing", "Carpentry & Joinery", "Painting",
-        "Flooring - Timber", "Electrical", "Electrical", "Plumbing", "Painting",
-        "Flooring - Timber", "Electrical", "Electrical", "Carpentry & Joinery", "Painting",
-        "Painting", "Flooring - Timber", "Electrical", "Electrical", "Carpentry & Joinery",
-        "Painting", "Windows", "Painting", "Doors", "Electrical", "Electrical", "Electrical",
-        "Carpentry & Joinery", "Plumbing", "Plumbing", "Carpentry & Joinery", "Flooring - Tiles",
-        "Plumbing", "Painting", "Painting", "Doors", "Electrical", "Electrical", "Plumbing",
-        "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting", "Carpentry & Joinery",
-        "Painting", "Plumbing", "Plumbing", "Flooring - Timber", "Electrical", "Plumbing",
-        "Carpentry & Joinery", "Electrical", "Appliances", "Painting", "Appliances", "Plumbing",
-        "Doors", "Plumbing", "Electrical", "Electrical", "Plumbing", "Electrical",
-        "Carpentry & Joinery", "Flooring - Tiles", "Painting", "Windows", "Plumbing", "Doors",
-        "Plumbing", "Electrical", "Electrical", "Plumbing", "Electrical", "Carpentry & Joinery",
-        "Flooring - Tiles", "Painting", "Painting", "Electrical", "Carpentry & Joinery",
-        "Carpentry & Joinery", "Carpentry & Joinery", "Painting", "Carpentry & Joinery",
-        "Electrical", "Electrical", "Carpentry & Joinery", "Painting", "Painting",
-        "Flooring - Timber", "Electrical", "Carpentry & Joinery", "Painting", "Plumbing",
-        "Painting", "Doors", "Electrical", "Electrical", "Electrical", "Carpentry & Joinery",
-        "Plumbing", "Plumbing", "Carpentry & Joinery", "Flooring - Tiles", "Plumbing", "Painting"
-    ]
+    # Handle mapping source selection
+    if mapping_source == "Upload master mapping CSV":
+        st.markdown("#### 📤 Upload Your Master Trade Mapping")
+        uploaded_mapping = st.file_uploader(
+            "Upload Master Trade Mapping CSV",
+            type=['csv'],
+            help="Upload your CSV file with columns: Room, Component, Trade",
+            key="master_mapping_upload"
+        )
+        
+        if uploaded_mapping is not None:
+            try:
+                # Read the uploaded file
+                mapping_df = pd.read_csv(uploaded_mapping)
+                
+                # Validate required columns
+                required_cols = ['Room', 'Component', 'Trade']
+                if all(col in mapping_df.columns for col in required_cols):
+                    
+                    # Display preview
+                    st.markdown("#### 🔍 Preview of Uploaded Mapping")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total Mappings", len(mapping_df))
+                    with col2:
+                        st.metric("Unique Rooms", mapping_df['Room'].nunique())
+                    with col3:
+                        st.metric("Unique Trades", mapping_df['Trade'].nunique())
+                    
+                    # Show first 10 rows
+                    st.dataframe(mapping_df.head(10), use_container_width=True)
+                    if len(mapping_df) > 10:
+                        st.info(f"Showing first 10 of {len(mapping_df)} total mappings")
+                    
+                    # Option to use this mapping
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        use_uploaded = st.checkbox(
+                            f"✅ Use this mapping as my master trade mapping ({len(mapping_df)} entries)",
+                            key="use_uploaded_mapping"
+                        )
+                    
+                    with col2:
+                        if st.button("🚀 Apply Mapping", type="primary"):
+                            if use_uploaded:
+                                st.session_state.trade_mapping = mapping_df.copy()
+                                st.session_state.mapping_edited = True
+                                st.success(f"✅ Applied {len(mapping_df)} trade mappings successfully!")
+                                st.balloons()
+                                st.rerun()
+                            else:
+                                st.warning("Please check the box to confirm using this mapping")
+                    
+                    # Show trade distribution
+                    if len(mapping_df) > 0:
+                        st.markdown("#### 📊 Trade Distribution")
+                        trade_counts = mapping_df['Trade'].value_counts()
+                        
+                        # Create columns for trade counts
+                        cols = st.columns(min(len(trade_counts), 5))
+                        for i, (trade, count) in enumerate(trade_counts.head(5).items()):
+                            with cols[i % 5]:
+                                st.metric(trade, count)
+                        
+                        if len(trade_counts) > 5:
+                            st.info(f"Showing top 5 trades. Total unique trades: {len(trade_counts)}")
+                
+                else:
+                    st.error("❌ CSV must have columns: Room, Component, Trade")
+                    st.markdown("**Expected format:**")
+                    st.code("""Room,Component,Trade
+Apartment Entry Door,Door Handle,Doors
+Bathroom,Ceiling,Painting
+Kitchen Area,Cabinets,Carpentry & Joinery""")
+                    
+            except Exception as e:
+                st.error(f"❌ Error reading CSV file: {str(e)}")
+                st.markdown("**Tips:**")
+                st.markdown("- Ensure the file is a valid CSV")
+                st.markdown("- Check that columns are named exactly: Room, Component, Trade")
+                st.markdown("- Make sure there are no special characters causing issues")
     
-    # Verify the data is exactly 266 entries
-    assert len(rooms) == 266, f"Rooms list should have 266 entries, got {len(rooms)}"
-    assert len(components) == 266, f"Components list should have 266 entries, got {len(components)}"
-    assert len(trades) == 266, f"Trades list should have 266 entries, got {len(trades)}"
+    elif mapping_source == "Use current mapping":
+        if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
+            st.info(f"Using current mapping with {len(st.session_state.trade_mapping)} entries")
+        else:
+            st.warning("No current mapping available. Please upload a CSV file first.")
+        
+    elif mapping_source == "Start with empty mapping":
+        if st.button("🆕 Initialize Empty Mapping"):
+            st.session_state.trade_mapping = pd.DataFrame(columns=['Room', 'Component', 'Trade'])
+            st.session_state.mapping_edited = True
+            st.success("✅ Initialized with empty mapping")
     
-    # Create DataFrame
-    df = pd.DataFrame({
-        'Room': rooms,
-        'Component': components,
-        'Trade': trades
-    })
+    # Display current mapping if available
+    if st.session_state.trade_mapping is not None and len(st.session_state.trade_mapping) > 0:
+        st.markdown("---")
+        st.markdown("### ✏️ Current Trade Mapping")
+        
+        # Mapping statistics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Mappings", len(st.session_state.trade_mapping))
+        with col2:
+            unique_rooms = st.session_state.trade_mapping['Room'].nunique()
+            st.metric("Unique Rooms", unique_rooms)
+        with col3:
+            unique_trades = st.session_state.trade_mapping['Trade'].nunique()
+            st.metric("Trade Categories", unique_trades)
+        with col4:
+            if st.session_state.mapping_edited:
+                st.success("✅ Active")
+            else:
+                st.info("📝 Ready")
+        
+        # Quick preview
+        with st.expander("🔍 Preview Current Mapping", expanded=False):
+            st.dataframe(
+                st.session_state.trade_mapping.head(15),
+                use_container_width=True
+            )
+            if len(st.session_state.trade_mapping) > 15:
+                st.info(f"Showing first 15 of {len(st.session_state.trade_mapping)} total mappings")
+        
+        # Editable mapping
+        with st.expander("✏️ Edit Mapping (Advanced)", expanded=False):
+            edited_mapping = st.data_editor(
+                st.session_state.trade_mapping,
+                use_container_width=True,
+                num_rows="dynamic",
+                column_config={
+                    "Room": st.column_config.TextColumn("Room", width="medium"),
+                    "Component": st.column_config.TextColumn("Component", width="large"),
+                    "Trade": st.column_config.SelectboxColumn(
+                        "Trade",
+                        options=get_available_trades(),
+                        width="medium"
+                    )
+                },
+                key="mapping_editor"
+            )
+            
+            # Update session state if changes were made
+            if not edited_mapping.equals(st.session_state.trade_mapping):
+                st.session_state.trade_mapping = edited_mapping
+                st.session_state.mapping_edited = True
+                st.success("✅ Mapping updated!")
+        
+        # Add new mapping entry
+        with st.expander("➕ Add Single Mapping", expanded=False):
+            col1, col2, col3, col4 = st.columns([2, 3, 2, 1])
+            
+            with col1:
+                new_room = st.text_input("Room", key="new_room")
+            
+            with col2:
+                new_component = st.text_input("Component", key="new_component")
+            
+            with col3:
+                new_trade = st.selectbox("Trade", get_available_trades(), key="new_trade")
+            
+            with col4:
+                if st.button("➕ Add", key="add_mapping"):
+                    if new_room and new_component and new_tradedef load_default_mapping():
+    """Load empty mapping by default - users will upload their own master data"""
     
-    # Display confirmation message
-    st.success(f"✅ Loaded exactly {len(df)} trade mappings from master data!")
+    # Return empty DataFrame with correct columns
+    df = pd.DataFrame(columns=['Room', 'Component', 'Trade'])
+    
+    st.info("📋 No default mapping loaded. Please upload your master trade mapping CSV file to get started.")
     
     return df,GPO,Electrical
 Butler's Pantry,Light Fixtures,Electrical
