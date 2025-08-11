@@ -1,0 +1,4 @@
+# .env file
+ADMIN_PASSWORD=SecureAdmin2025!
+INSPECTOR_PASSWORD=SecureInspector2025!
+SALT_KEY=inspection_app_unique_salt_2025

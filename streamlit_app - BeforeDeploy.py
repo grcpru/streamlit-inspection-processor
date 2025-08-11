@@ -10,31 +10,6 @@ import hmac
 import time
 import json
 import os
-import os
-from dotenv import load_dotenv
-
-# Add at the top of your file, after imports
-load_dotenv()
-
-# In StreamlinedAuthManager.__init__(), replace default_users with:
-self.default_users = {
-    "admin": {
-        "password_hash": self._hash_password(os.getenv("ADMIN_PASSWORD", "admin123")),
-        "role": "admin",
-        "name": "System Administrator"
-    },
-    "inspector": {
-        "password_hash": self._hash_password(os.getenv("INSPECTOR_PASSWORD", "inspector123")),
-        "role": "user", 
-        "name": "Site Inspector"
-    }
-}
-
-# Update _hash_password method:
-def _hash_password(self, password):
-    """Hash password using SHA-256 with salt"""
-    salt = os.getenv("SALT_KEY", "inspection_app_salt_2024")
-    return hashlib.sha256((password + salt).encode()).hexdigest()
 
 # Try to import the professional report generators
 WORD_REPORT_AVAILABLE = False
@@ -1213,15 +1188,6 @@ if uploaded_csv is not None:
             st.error(f"❌ Error processing data: {e}")
             st.code(traceback.format_exc())
 
-# In your CSV upload section, after: if uploaded_csv is not None:
-if uploaded_csv.size > 50 * 1024 * 1024:  # 50MB limit
-    st.error("❌ File too large. Maximum size is 50MB.")
-    st.stop()
-
-if not uploaded_csv.name.lower().endswith('.csv'):
-    st.error("❌ Please upload a CSV file.")
-    st.stop()
-    
 # STEP 3: Show Results and Download Options
 if st.session_state.processed_data is not None and st.session_state.metrics is not None:
     st.markdown("""

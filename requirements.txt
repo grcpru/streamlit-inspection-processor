@@ -4,4 +4,7 @@ xlsxwriter
 python-docx==0.8.11
 matplotlib==3.7.2
 seaborn==0.12.2
-pytz
+Pillow>=10.0.0
+pytz>=2023.3
+python-dotenv>=1.0.0
+openpyxl>=3.1.0

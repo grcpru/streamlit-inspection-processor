@@ -1,40 +1,10 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO, StringIO
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 import traceback
 import zipfile
-import hashlib
-import hmac
-import time
-import json
-import os
-import os
-from dotenv import load_dotenv
-
-# Add at the top of your file, after imports
-load_dotenv()
-
-# In StreamlinedAuthManager.__init__(), replace default_users with:
-self.default_users = {
-    "admin": {
-        "password_hash": self._hash_password(os.getenv("ADMIN_PASSWORD", "admin123")),
-        "role": "admin",
-        "name": "System Administrator"
-    },
-    "inspector": {
-        "password_hash": self._hash_password(os.getenv("INSPECTOR_PASSWORD", "inspector123")),
-        "role": "user", 
-        "name": "Site Inspector"
-    }
-}
-
-# Update _hash_password method:
-def _hash_password(self, password):
-    """Hash password using SHA-256 with salt"""
-    salt = os.getenv("SALT_KEY", "inspection_app_salt_2024")
-    return hashlib.sha256((password + salt).encode()).hexdigest()
 
 # Try to import the professional report generators
 WORD_REPORT_AVAILABLE = False
@@ -54,327 +24,6 @@ try:
     WORD_REPORT_AVAILABLE = True
 except Exception as e:
     WORD_IMPORT_ERROR = str(e)
-
-# =============================================================================
-# STREAMLINED AUTHENTICATION SYSTEM
-# =============================================================================
-
-class StreamlinedAuthManager:
-    """Simplified authentication manager - keeps security but removes complexity"""
-    
-    def __init__(self):
-        self.users_file = "users.json"
-        self.session_timeout = 8 * 60 * 60  # 8 hours in seconds
-        
-        # Simplified default users - removed unnecessary fields
-        self.default_users = {
-            "admin": {
-                "password_hash": self._hash_password("admin123"),
-                "role": "admin",
-                "name": "System Administrator"
-            },
-            "inspector": {
-                "password_hash": self._hash_password("inspector123"),
-                "role": "user", 
-                "name": "Site Inspector"
-            }
-        }
-        
-        self._load_users()
-    
-    def _hash_password(self, password):
-        """Hash password using SHA-256 with salt"""
-        salt = "inspection_app_salt_2024"
-        return hashlib.sha256((password + salt).encode()).hexdigest()
-    
-    def _load_users(self):
-        """Load users from file or create default users"""
-        try:
-            if os.path.exists(self.users_file):
-                with open(self.users_file, 'r') as f:
-                    loaded_users = json.load(f)
-                
-                # Migrate old user format to new format if needed
-                migrated_users = {}
-                for username, user_data in loaded_users.items():
-                    if "name" not in user_data and "full_name" in user_data:
-                        # Migrate old format
-                        migrated_users[username] = {
-                            "password_hash": user_data["password_hash"],
-                            "role": user_data["role"],
-                            "name": user_data["full_name"]
-                        }
-                    elif "name" in user_data:
-                        # Already new format
-                        migrated_users[username] = {
-                            "password_hash": user_data["password_hash"],
-                            "role": user_data["role"],
-                            "name": user_data["name"]
-                        }
-                    else:
-                        # Handle any other cases
-                        migrated_users[username] = {
-                            "password_hash": user_data.get("password_hash", ""),
-                            "role": user_data.get("role", "user"),
-                            "name": user_data.get("name", user_data.get("full_name", username.title()))
-                        }
-                
-                self.users = migrated_users
-                # Save the migrated format
-                self._save_users()
-            else:
-                self.users = self.default_users.copy()
-                self._save_users()
-        except Exception as e:
-            st.error(f"Error loading users: {e}")
-            self.users = self.default_users.copy()
-    
-    def _save_users(self):
-        """Save users to file"""
-        try:
-            with open(self.users_file, 'w') as f:
-                json.dump(self.users, f, indent=2)
-        except Exception as e:
-            st.error(f"Error saving users: {e}")
-    
-    def authenticate(self, username, password):
-        """Simple authentication - removed account lockout for small teams"""
-        if not username or not password:
-            return False, "Please enter username and password"
-        
-        if username not in self.users:
-            return False, "Invalid username or password"
-        
-        user = self.users[username]
-        
-        # Simple password verification
-        password_hash = self._hash_password(password)
-        if password_hash != user["password_hash"]:
-            return False, "Invalid username or password"
-        
-        # Success - no complex tracking needed for small teams
-        return True, "Login successful"
-    
-    def create_session(self, username):
-        """Create a simple session for user"""
-        user = self.users[username]
-        
-        # Store minimal session data
-        st.session_state.authenticated = True
-        st.session_state.username = username
-        st.session_state.user_role = user["role"]
-        # Handle both old and new user data structures
-        st.session_state.user_name = user.get("name", user.get("full_name", "User"))
-        st.session_state.login_time = time.time()
-    
-    def is_session_valid(self):
-        """Check if current session is valid"""
-        if not st.session_state.get("authenticated", False):
-            return False
-        
-        if not st.session_state.get("login_time"):
-            return False
-        
-        # Check session timeout
-        if time.time() - st.session_state.login_time > self.session_timeout:
-            self.logout()
-            return False
-        
-        return True
-    
-    def logout(self):
-        """Logout current user"""
-        # Clear authentication state
-        auth_keys = ["authenticated", "username", "user_role", "user_name", "login_time"]
-        for key in auth_keys:
-            if key in st.session_state:
-                del st.session_state[key]
-        
-        # Clear application data
-        app_keys = ["trade_mapping", "processed_data", "metrics", "step_completed", "report_images"]
-        for key in app_keys:
-            if key in st.session_state:
-                del st.session_state[key]
-    
-    def get_current_user(self):
-        """Get current user information"""
-        return {
-            "username": st.session_state.get("username", ""),
-            "name": st.session_state.get("user_name", "User"),
-            "role": st.session_state.get("user_role", "user")
-        }
-    
-    def change_password(self, username, old_password, new_password):
-        """Change user password"""
-        if username not in self.users:
-            return False, "User not found"
-        
-        # Verify old password
-        old_hash = self._hash_password(old_password)
-        if old_hash != self.users[username]["password_hash"]:
-            return False, "Current password is incorrect"
-        
-        # Simple validation
-        if len(new_password) < 6:
-            return False, "New password must be at least 6 characters"
-        
-        # Update password
-        self.users[username]["password_hash"] = self._hash_password(new_password)
-        self._save_users()
-        
-        return True, "Password changed successfully"
-
-# Initialize authentication manager
-auth_manager = StreamlinedAuthManager()
-
-def show_login_page():
-    """Simplified login page"""
-    st.markdown("""
-    <div style="max-width: 400px; margin: 2rem auto; padding: 2rem; 
-                background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h2 style="text-align: center; color: #1976d2; margin-bottom: 2rem;">
-            🏢 Inspection Report System
-        </h2>
-        <h3 style="text-align: center; color: #666; margin-bottom: 2rem;">
-            Please Login to Continue
-        </h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Simple login form
-    with st.form("login_form"):
-        col1, col2, col3 = st.columns([1, 2, 1])
-        
-        with col2:
-            st.markdown("### 🔐 Login")
-            
-            username = st.text_input("👤 Username", placeholder="Enter your username")
-            password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
-            
-            login_button = st.form_submit_button("🚀 Login", use_container_width=True, type="primary")
-            
-            if login_button:
-                if username and password:
-                    success, message = auth_manager.authenticate(username, password)
-                    
-                    if success:
-                        auth_manager.create_session(username)
-                        st.success(message)
-                        st.rerun()
-                    else:
-                        st.error(message)
-                else:
-                    st.warning("Please enter both username and password")
-    
-    # Demo credentials info (simplified)
-    with st.expander("🔍 Demo Credentials", expanded=False):
-        st.info("""
-        **Demo Accounts:**
-        
-        **Administrator:**
-        - Username: `admin`
-        - Password: `admin123`
-        
-        **Inspector:**
-        - Username: `inspector` 
-        - Password: `inspector123`
-        
-        ⚠️ **Note:** Change these passwords for production use!
-        """)
-    
-    # Simplified features preview
-    st.markdown("---")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        ### 📊 Professional Reports
-        - Excel workbooks with charts
-        - Word documents with images
-        - Comprehensive analytics
-        """)
-    
-    with col2:
-        st.markdown("""
-        ### 🔧 Trade Mapping
-        - 266+ component mappings
-        - 10 trade categories
-        - Automated classification
-        """)
-    
-    with col3:
-        st.markdown("""
-        ### 🏠 Settlement Analysis
-        - Unit readiness assessment
-        - Defect rate calculations
-        - Visual dashboards
-        """)
-
-def show_user_menu():
-    """Simplified user menu in sidebar"""
-    if not auth_manager.is_session_valid():
-        return False
-    
-    user = auth_manager.get_current_user()
-    
-    with st.sidebar:
-        st.markdown("---")
-        st.markdown("### 👤 User Information")
-        
-        # Simple user info display
-        st.markdown(f"""
-        **Name:** {user['name']}  
-        **Role:** {user['role'].title()}  
-        **Session:** Active
-        """)
-        
-        # Simple user actions
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🔑 Change Password", use_container_width=True):
-                st.session_state.show_password_change = True
-        
-        with col2:
-            if st.button("🚪 Logout", use_container_width=True, type="primary"):
-                auth_manager.logout()
-                st.success("Logged out successfully!")
-                st.rerun()
-        
-        # Simplified password change form
-        if st.session_state.get("show_password_change", False):
-            st.markdown("---")
-            st.markdown("### 🔑 Change Password")
-            
-            with st.form("password_change_form"):
-                old_password = st.text_input("Current Password", type="password")
-                new_password = st.text_input("New Password", type="password")
-                confirm_password = st.text_input("Confirm New Password", type="password")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.form_submit_button("Update", use_container_width=True):
-                        if new_password != confirm_password:
-                            st.error("New passwords don't match")
-                        elif len(new_password) < 6:
-                            st.error("Password must be at least 6 characters")
-                        else:
-                            success, message = auth_manager.change_password(
-                                user['username'], old_password, new_password
-                            )
-                            if success:
-                                st.success(message)
-                                st.session_state.show_password_change = False
-                                st.rerun()
-                            else:
-                                st.error(message)
-                
-                with col2:
-                    if st.form_submit_button("Cancel", use_container_width=True):
-                        st.session_state.show_password_change = False
-                        st.rerun()
-    
-    return True
 
 # Page configuration
 st.set_page_config(
@@ -460,25 +109,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Check authentication
-if not auth_manager.is_session_valid():
-    show_login_page()
-    st.stop()
-
-# Show user menu and check if user is still logged in
-if not show_user_menu():
-    st.stop()
-
-# Main application header (updated for streamlined auth)
-user = auth_manager.get_current_user()
-st.markdown(f"""
+# Main header
+st.markdown("""
 <div class="main-header">
     <h1>🏢 Professional Inspection Report Processor</h1>
-    <p>Essential Community Management</p>
-    <div style="margin-top: 1rem; opacity: 0.9; font-size: 0.9em;">
-        <span>👋 Welcome back, <strong>{user['name']}</strong>!</span>
-        <span style="margin-left: 2rem;">🎭 Role: <strong>{user['role'].title()}</strong></span>
-    </div>
+    <p>Transform your iAuditor CSV files into comprehensive Excel and Word reports</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -543,6 +178,7 @@ with st.sidebar:
         if st.button("💾 Save Images for Report"):
             images_saved = 0
             
+            # Save uploaded files temporarily
             import tempfile
             import os
             
@@ -1213,15 +849,6 @@ if uploaded_csv is not None:
             st.error(f"❌ Error processing data: {e}")
             st.code(traceback.format_exc())
 
-# In your CSV upload section, after: if uploaded_csv is not None:
-if uploaded_csv.size > 50 * 1024 * 1024:  # 50MB limit
-    st.error("❌ File too large. Maximum size is 50MB.")
-    st.stop()
-
-if not uploaded_csv.name.lower().endswith('.csv'):
-    st.error("❌ Please upload a CSV file.")
-    st.stop()
-    
 # STEP 3: Show Results and Download Options
 if st.session_state.processed_data is not None and st.session_state.metrics is not None:
     st.markdown("""
@@ -1374,7 +1001,7 @@ if st.session_state.processed_data is not None and st.session_state.metrics is n
                     else:
                         st.error("❌ Excel generator not available")
                         st.code(f"Import error: {EXCEL_IMPORT_ERROR}")
-                        st.stop()
+                        st.stop()  # Use st.stop() instead of return
                     
                     # Generate Word if available
                     word_bytes = None
@@ -1636,19 +1263,19 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-# Enhanced Footer with streamlined user info
+# Enhanced Footer with additional information
 st.markdown("---")
-st.markdown(f"""
+st.markdown("""
 <div style="text-align: center; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 2rem; border-radius: 10px; margin-top: 2rem;">
     <h4 style="color: #2E3A47; margin-bottom: 1rem;">🏢 Professional Inspection Report Processor v2.0</h4>
     <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
         <div><strong>📊 Excel Reports:</strong> Multi-sheet analysis</div>
         <div><strong>📄 Word Reports:</strong> Executive summaries</div>
         <div><strong>📈 Native Charts:</strong> Streamlit visualizations</div>
-        <div><strong>🔒 Secure Processing:</strong> Authenticated access</div>
+        <div><strong>🔒 Secure Processing:</strong> Local data handling</div>
     </div>
     <p style="margin-top: 1rem; color: #666; font-size: 0.9em;">
-        Built with Streamlit • Powered by Python • Logged in as: {user['name']}
+        Built with Streamlit • Powered by Python • For technical support, contact your system administrator
     </p>
 </div>
 """, unsafe_allow_html=True)

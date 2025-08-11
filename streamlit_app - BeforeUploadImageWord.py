@@ -1,40 +1,10 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO, StringIO
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 import traceback
 import zipfile
-import hashlib
-import hmac
-import time
-import json
-import os
-import os
-from dotenv import load_dotenv
-
-# Add at the top of your file, after imports
-load_dotenv()
-
-# In StreamlinedAuthManager.__init__(), replace default_users with:
-self.default_users = {
-    "admin": {
-        "password_hash": self._hash_password(os.getenv("ADMIN_PASSWORD", "admin123")),
-        "role": "admin",
-        "name": "System Administrator"
-    },
-    "inspector": {
-        "password_hash": self._hash_password(os.getenv("INSPECTOR_PASSWORD", "inspector123")),
-        "role": "user", 
-        "name": "Site Inspector"
-    }
-}
-
-# Update _hash_password method:
-def _hash_password(self, password):
-    """Hash password using SHA-256 with salt"""
-    salt = os.getenv("SALT_KEY", "inspection_app_salt_2024")
-    return hashlib.sha256((password + salt).encode()).hexdigest()
 
 # Try to import the professional report generators
 WORD_REPORT_AVAILABLE = False
@@ -54,327 +24,6 @@ try:
     WORD_REPORT_AVAILABLE = True
 except Exception as e:
     WORD_IMPORT_ERROR = str(e)
-
-# =============================================================================
-# STREAMLINED AUTHENTICATION SYSTEM
-# =============================================================================
-
-class StreamlinedAuthManager:
-    """Simplified authentication manager - keeps security but removes complexity"""
-    
-    def __init__(self):
-        self.users_file = "users.json"
-        self.session_timeout = 8 * 60 * 60  # 8 hours in seconds
-        
-        # Simplified default users - removed unnecessary fields
-        self.default_users = {
-            "admin": {
-                "password_hash": self._hash_password("admin123"),
-                "role": "admin",
-                "name": "System Administrator"
-            },
-            "inspector": {
-                "password_hash": self._hash_password("inspector123"),
-                "role": "user", 
-                "name": "Site Inspector"
-            }
-        }
-        
-        self._load_users()
-    
-    def _hash_password(self, password):
-        """Hash password using SHA-256 with salt"""
-        salt = "inspection_app_salt_2024"
-        return hashlib.sha256((password + salt).encode()).hexdigest()
-    
-    def _load_users(self):
-        """Load users from file or create default users"""
-        try:
-            if os.path.exists(self.users_file):
-                with open(self.users_file, 'r') as f:
-                    loaded_users = json.load(f)
-                
-                # Migrate old user format to new format if needed
-                migrated_users = {}
-                for username, user_data in loaded_users.items():
-                    if "name" not in user_data and "full_name" in user_data:
-                        # Migrate old format
-                        migrated_users[username] = {
-                            "password_hash": user_data["password_hash"],
-                            "role": user_data["role"],
-                            "name": user_data["full_name"]
-                        }
-                    elif "name" in user_data:
-                        # Already new format
-                        migrated_users[username] = {
-                            "password_hash": user_data["password_hash"],
-                            "role": user_data["role"],
-                            "name": user_data["name"]
-                        }
-                    else:
-                        # Handle any other cases
-                        migrated_users[username] = {
-                            "password_hash": user_data.get("password_hash", ""),
-                            "role": user_data.get("role", "user"),
-                            "name": user_data.get("name", user_data.get("full_name", username.title()))
-                        }
-                
-                self.users = migrated_users
-                # Save the migrated format
-                self._save_users()
-            else:
-                self.users = self.default_users.copy()
-                self._save_users()
-        except Exception as e:
-            st.error(f"Error loading users: {e}")
-            self.users = self.default_users.copy()
-    
-    def _save_users(self):
-        """Save users to file"""
-        try:
-            with open(self.users_file, 'w') as f:
-                json.dump(self.users, f, indent=2)
-        except Exception as e:
-            st.error(f"Error saving users: {e}")
-    
-    def authenticate(self, username, password):
-        """Simple authentication - removed account lockout for small teams"""
-        if not username or not password:
-            return False, "Please enter username and password"
-        
-        if username not in self.users:
-            return False, "Invalid username or password"
-        
-        user = self.users[username]
-        
-        # Simple password verification
-        password_hash = self._hash_password(password)
-        if password_hash != user["password_hash"]:
-            return False, "Invalid username or password"
-        
-        # Success - no complex tracking needed for small teams
-        return True, "Login successful"
-    
-    def create_session(self, username):
-        """Create a simple session for user"""
-        user = self.users[username]
-        
-        # Store minimal session data
-        st.session_state.authenticated = True
-        st.session_state.username = username
-        st.session_state.user_role = user["role"]
-        # Handle both old and new user data structures
-        st.session_state.user_name = user.get("name", user.get("full_name", "User"))
-        st.session_state.login_time = time.time()
-    
-    def is_session_valid(self):
-        """Check if current session is valid"""
-        if not st.session_state.get("authenticated", False):
-            return False
-        
-        if not st.session_state.get("login_time"):
-            return False
-        
-        # Check session timeout
-        if time.time() - st.session_state.login_time > self.session_timeout:
-            self.logout()
-            return False
-        
-        return True
-    
-    def logout(self):
-        """Logout current user"""
-        # Clear authentication state
-        auth_keys = ["authenticated", "username", "user_role", "user_name", "login_time"]
-        for key in auth_keys:
-            if key in st.session_state:
-                del st.session_state[key]
-        
-        # Clear application data
-        app_keys = ["trade_mapping", "processed_data", "metrics", "step_completed", "report_images"]
-        for key in app_keys:
-            if key in st.session_state:
-                del st.session_state[key]
-    
-    def get_current_user(self):
-        """Get current user information"""
-        return {
-            "username": st.session_state.get("username", ""),
-            "name": st.session_state.get("user_name", "User"),
-            "role": st.session_state.get("user_role", "user")
-        }
-    
-    def change_password(self, username, old_password, new_password):
-        """Change user password"""
-        if username not in self.users:
-            return False, "User not found"
-        
-        # Verify old password
-        old_hash = self._hash_password(old_password)
-        if old_hash != self.users[username]["password_hash"]:
-            return False, "Current password is incorrect"
-        
-        # Simple validation
-        if len(new_password) < 6:
-            return False, "New password must be at least 6 characters"
-        
-        # Update password
-        self.users[username]["password_hash"] = self._hash_password(new_password)
-        self._save_users()
-        
-        return True, "Password changed successfully"
-
-# Initialize authentication manager
-auth_manager = StreamlinedAuthManager()
-
-def show_login_page():
-    """Simplified login page"""
-    st.markdown("""
-    <div style="max-width: 400px; margin: 2rem auto; padding: 2rem; 
-                background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h2 style="text-align: center; color: #1976d2; margin-bottom: 2rem;">
-            🏢 Inspection Report System
-        </h2>
-        <h3 style="text-align: center; color: #666; margin-bottom: 2rem;">
-            Please Login to Continue
-        </h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Simple login form
-    with st.form("login_form"):
-        col1, col2, col3 = st.columns([1, 2, 1])
-        
-        with col2:
-            st.markdown("### 🔐 Login")
-            
-            username = st.text_input("👤 Username", placeholder="Enter your username")
-            password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
-            
-            login_button = st.form_submit_button("🚀 Login", use_container_width=True, type="primary")
-            
-            if login_button:
-                if username and password:
-                    success, message = auth_manager.authenticate(username, password)
-                    
-                    if success:
-                        auth_manager.create_session(username)
-                        st.success(message)
-                        st.rerun()
-                    else:
-                        st.error(message)
-                else:
-                    st.warning("Please enter both username and password")
-    
-    # Demo credentials info (simplified)
-    with st.expander("🔍 Demo Credentials", expanded=False):
-        st.info("""
-        **Demo Accounts:**
-        
-        **Administrator:**
-        - Username: `admin`
-        - Password: `admin123`
-        
-        **Inspector:**
-        - Username: `inspector` 
-        - Password: `inspector123`
-        
-        ⚠️ **Note:** Change these passwords for production use!
-        """)
-    
-    # Simplified features preview
-    st.markdown("---")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        ### 📊 Professional Reports
-        - Excel workbooks with charts
-        - Word documents with images
-        - Comprehensive analytics
-        """)
-    
-    with col2:
-        st.markdown("""
-        ### 🔧 Trade Mapping
-        - 266+ component mappings
-        - 10 trade categories
-        - Automated classification
-        """)
-    
-    with col3:
-        st.markdown("""
-        ### 🏠 Settlement Analysis
-        - Unit readiness assessment
-        - Defect rate calculations
-        - Visual dashboards
-        """)
-
-def show_user_menu():
-    """Simplified user menu in sidebar"""
-    if not auth_manager.is_session_valid():
-        return False
-    
-    user = auth_manager.get_current_user()
-    
-    with st.sidebar:
-        st.markdown("---")
-        st.markdown("### 👤 User Information")
-        
-        # Simple user info display
-        st.markdown(f"""
-        **Name:** {user['name']}  
-        **Role:** {user['role'].title()}  
-        **Session:** Active
-        """)
-        
-        # Simple user actions
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🔑 Change Password", use_container_width=True):
-                st.session_state.show_password_change = True
-        
-        with col2:
-            if st.button("🚪 Logout", use_container_width=True, type="primary"):
-                auth_manager.logout()
-                st.success("Logged out successfully!")
-                st.rerun()
-        
-        # Simplified password change form
-        if st.session_state.get("show_password_change", False):
-            st.markdown("---")
-            st.markdown("### 🔑 Change Password")
-            
-            with st.form("password_change_form"):
-                old_password = st.text_input("Current Password", type="password")
-                new_password = st.text_input("New Password", type="password")
-                confirm_password = st.text_input("Confirm New Password", type="password")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.form_submit_button("Update", use_container_width=True):
-                        if new_password != confirm_password:
-                            st.error("New passwords don't match")
-                        elif len(new_password) < 6:
-                            st.error("Password must be at least 6 characters")
-                        else:
-                            success, message = auth_manager.change_password(
-                                user['username'], old_password, new_password
-                            )
-                            if success:
-                                st.success(message)
-                                st.session_state.show_password_change = False
-                                st.rerun()
-                            else:
-                                st.error(message)
-                
-                with col2:
-                    if st.form_submit_button("Cancel", use_container_width=True):
-                        st.session_state.show_password_change = False
-                        st.rerun()
-    
-    return True
 
 # Page configuration
 st.set_page_config(
@@ -460,25 +109,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Check authentication
-if not auth_manager.is_session_valid():
-    show_login_page()
-    st.stop()
-
-# Show user menu and check if user is still logged in
-if not show_user_menu():
-    st.stop()
-
-# Main application header (updated for streamlined auth)
-user = auth_manager.get_current_user()
-st.markdown(f"""
+# Main header
+st.markdown("""
 <div class="main-header">
     <h1>🏢 Professional Inspection Report Processor</h1>
-    <p>Essential Community Management</p>
-    <div style="margin-top: 1rem; opacity: 0.9; font-size: 0.9em;">
-        <span>👋 Welcome back, <strong>{user['name']}</strong>!</span>
-        <span style="margin-left: 2rem;">🎭 Role: <strong>{user['role'].title()}</strong></span>
-    </div>
+    <p>Transform your iAuditor CSV files into comprehensive Excel and Word reports</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -496,14 +131,6 @@ if "building_info" not in st.session_state:
         "name": "Professional Building Complex",
         "address": "123 Professional Street\nMelbourne, VIC 3000"
     }
-if "report_images" not in st.session_state:
-    st.session_state.report_images = {
-        "logo": None,
-        "cover": None,
-        "summary_chart": None,
-        "trades_chart": None,
-        "settlement_chart": None
-    }
 
 # Sidebar configuration
 with st.sidebar:
@@ -520,78 +147,6 @@ with st.sidebar:
             st.caption(f"{st.session_state.metrics['total_units']} units processed")
     else:
         st.info("⏳ Step 2: Process data")
-    
-    st.markdown("---")
-    
-    # Enhanced Word Report Images Section
-    st.header("🖼️ Word Report Images")
-    st.markdown("Upload images to enhance your Word report (optional):")
-    
-    with st.expander("📸 Upload Report Images", expanded=False):
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            logo_upload = st.file_uploader("🏢 Company Logo", type=['png', 'jpg', 'jpeg'], key="logo_upload")
-            cover_upload = st.file_uploader("📷 Cover Image", type=['png', 'jpg', 'jpeg'], key="cover_upload")
-            summary_upload = st.file_uploader("📊 Summary Chart", type=['png', 'jpg', 'jpeg'], key="summary_upload")
-        
-        with col2:
-            trades_upload = st.file_uploader("🔧 Trades Chart", type=['png', 'jpg', 'jpeg'], key="trades_upload")
-            settlement_upload = st.file_uploader("🏠 Settlement Chart", type=['png', 'jpg', 'jpeg'], key="settlement_upload")
-        
-        # Process uploaded images
-        if st.button("💾 Save Images for Report"):
-            images_saved = 0
-            
-            import tempfile
-            import os
-            
-            temp_dir = tempfile.gettempdir()
-            
-            if logo_upload:
-                logo_path = os.path.join(temp_dir, f"logo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-                with open(logo_path, "wb") as f:
-                    f.write(logo_upload.getbuffer())
-                st.session_state.report_images["logo"] = logo_path
-                images_saved += 1
-            
-            if cover_upload:
-                cover_path = os.path.join(temp_dir, f"cover_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-                with open(cover_path, "wb") as f:
-                    f.write(cover_upload.getbuffer())
-                st.session_state.report_images["cover"] = cover_path
-                images_saved += 1
-                
-            if summary_upload:
-                summary_path = os.path.join(temp_dir, f"summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-                with open(summary_path, "wb") as f:
-                    f.write(summary_upload.getbuffer())
-                st.session_state.report_images["summary_chart"] = summary_path
-                images_saved += 1
-                
-            if trades_upload:
-                trades_path = os.path.join(temp_dir, f"trades_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-                with open(trades_path, "wb") as f:
-                    f.write(trades_upload.getbuffer())
-                st.session_state.report_images["trades_chart"] = trades_path
-                images_saved += 1
-                
-            if settlement_upload:
-                settlement_path = os.path.join(temp_dir, f"settlement_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-                with open(settlement_path, "wb") as f:
-                    f.write(settlement_upload.getbuffer())
-                st.session_state.report_images["settlement_chart"] = settlement_path
-                images_saved += 1
-            
-            if images_saved > 0:
-                st.success(f"✅ {images_saved} image(s) saved for Word report enhancement!")
-            else:
-                st.info("ℹ️ No images uploaded.")
-        
-        # Show current images status
-        current_images = [k for k, v in st.session_state.report_images.items() if v is not None]
-        if current_images:
-            st.info(f"📸 Current images ready: {', '.join(current_images)}")
     
     st.markdown("---")
     
@@ -632,17 +187,32 @@ with col1:
 with col2:
     # Download default template
     default_mapping = """Room,Component,Trade
+Bathroom,Toilet,Plumbing
+Bathroom,Tiles,Flooring - Tiles
+Bathroom,Shower,Plumbing
+Bathroom,Vanity,Carpentry & Joinery
+Bedroom,Walls,Painting
+Bedroom,Flooring,Flooring - Carpet
+Bedroom,Windows,Windows
+Kitchen Area,Cabinets,Carpentry & Joinery
+Kitchen Area,Kitchen Sink,Plumbing
+Kitchen Area,Benchtop,Stone & Benchtops
+Living Room,Windows,Windows
+Living Room,Walls,Painting
+Living Room,Flooring,Flooring - Timber
+Balcony,Doors,Windows
+Balcony,Railings,Balustrade
+Laundry,Taps,Plumbing
+Laundry,Cabinets,Carpentry & Joinery
 Apartment Entry Door,Door Handle,Doors
 Apartment Entry Door,Door Locks and Keys,Doors
 Apartment Entry Door,Paint,Painting
 Apartment Entry Door,Self Latching,Doors
-Apartment SOU Door,Fire Compliance Tag,Doors
 Balcony,Balustrade,Carpentry & Joinery
 Balcony,Drainage Point,Plumbing
 Balcony,GPO (if applicable),Electrical
 Balcony,Glass,Windows
 Balcony,Glass Sliding Door,Windows
-Balcony,Tiles,Flooring - Tiles
 Bathroom,Bathtub (if applicable),Plumbing
 Bathroom,Ceiling,Painting
 Bathroom,Doors,Doors
@@ -650,254 +220,33 @@ Bathroom,Exhaust Fan,Electrical
 Bathroom,GPO,Electrical
 Bathroom,Light Fixtures,Electrical
 Bathroom,Mirror,Carpentry & Joinery
-Bathroom,Shower,Plumbing
 Bathroom,Sink,Plumbing
 Bathroom,Skirting,Carpentry & Joinery
-Bathroom,Tiles,Flooring - Tiles
-Bathroom,Toilet,Plumbing
-Bathroom,Walls,Painting
-Bathroom / Laundry,Bathroom_Ceiling,Painting
-Bathroom / Laundry,Bathroom_Doors,Doors
-Bathroom / Laundry,Bathroom_Exhaust Fan,Electrical
-Bathroom / Laundry,Bathroom_GPO,Electrical
-Bathroom / Laundry,Bathroom_Light Fixtures,Electrical
-Bathroom / Laundry,Bathroom_Mirror,Carpentry & Joinery
-Bathroom / Laundry,Bathroom_Shower,Plumbing
-Bathroom / Laundry,Bathroom_Sink,Plumbing
-Bathroom / Laundry,Bathroom_Skirting,Carpentry & Joinery
-Bathroom / Laundry,Bathroom_Tiles,Flooring - Tiles
-Bathroom / Laundry,Bathroom_Toilet,Plumbing
-Bathroom / Laundry,Bathroom_Walls,Painting
-Bathroom / Laundry,Ceiling,Painting
-Bathroom / Laundry,Cold/Hot Water Outlets,Plumbing
-Bathroom / Laundry,Doors,Doors
-Bathroom / Laundry,Drainage,Plumbing
-Bathroom / Laundry,Exhaust Fan,Electrical
-Bathroom / Laundry,GPO,Electrical
-Bathroom / Laundry,Laundry Section_Cold/Hot Water Outlets,Plumbing
-Bathroom / Laundry,Laundry Section_Doors,Doors
-Bathroom / Laundry,Laundry Section_Drainage,Plumbing
-Bathroom / Laundry,Laundry Section_Exhaust Fan,Electrical
-Bathroom / Laundry,Laundry Section_GPO,Electrical
-Bathroom / Laundry,Laundry Section_Laundry Sink,Plumbing
-Bathroom / Laundry,Laundry Section_Light Fixtures,Electrical
-Bathroom / Laundry,Laundry Section_Skirting,Carpentry & Joinery
-Bathroom / Laundry,Laundry Section_Tiles,Flooring - Tiles
-Bathroom / Laundry,Laundry Section_Walls,Painting
-Bathroom / Laundry,Laundry Sink (if applicable),Plumbing
-Bathroom / Laundry,Light Fixtures,Electrical
-Bathroom / Laundry,Mirror,Carpentry & Joinery
-Bathroom / Laundry,Shower,Plumbing
-Bathroom / Laundry,Sink,Plumbing
-Bathroom / Laundry,Skirting,Carpentry & Joinery
-Bathroom / Laundry,Tiles,Flooring - Tiles
-Bathroom / Laundry,Toilet,Plumbing
-Bathroom / Laundry,Walls,Painting
-Bathroom / Laundry,Laundry Sink,Plumbing
 Bedroom,Carpets,Flooring - Carpets
 Bedroom,Ceiling,Painting
 Bedroom,Doors,Doors
 Bedroom,GPO,Electrical
 Bedroom,Light Fixtures,Electrical
-Bedroom,Network Router,Electrical
-Bedroom,Network Router (if applicable),Electrical
 Bedroom,Skirting,Carpentry & Joinery
-Bedroom,Sliding Glass Door (if applicable),Windows
-Bedroom,Walls,Painting
 Bedroom,Wardrobe,Carpentry & Joinery
-Bedroom,Windows,Windows
-Bedroom 1,Carpets,Flooring - Carpets
-Bedroom 1,Ceiling,Painting
-Bedroom 1,Doors,Doors
-Bedroom 1,GPO,Electrical
-Bedroom 1,Light Fixtures,Electrical
-Bedroom 1,Network Router (if applicable),Electrical
-Bedroom 1,Skirting,Carpentry & Joinery
-Bedroom 1,Walls,Doors
-Bedroom 1,Wardrobe,Carpentry & Joinery
-Bedroom 1,Windows,Windows
-Bedroom 1 w/Ensuite,Bathtub (if applicable),Plumbing
-Bedroom 1 w/Ensuite,Carpets,Flooring - Carpets
-Bedroom 1 w/Ensuite,Ceiling,Painting
-Bedroom 1 w/Ensuite,Doors,Doors
-Bedroom 1 w/Ensuite,Exhaust Fan,Electrical
-Bedroom 1 w/Ensuite,GPO,Electrical
-Bedroom 1 w/Ensuite,Light Fixtures,Electrical
-Bedroom 1 w/Ensuite,Mirror,Carpentry & Joinery
-Bedroom 1 w/Ensuite,Network Router (if applicable),Electrical
-Bedroom 1 w/Ensuite,Shower,Plumbing
-Bedroom 1 w/Ensuite,Sink,Plumbing
-Bedroom 1 w/Ensuite,Skirting,Carpentry & Joinery
-Bedroom 1 w/Ensuite,Tiles,Flooring - Tiles
-Bedroom 1 w/Ensuite,Toilet,Plumbing
-Bedroom 1 w/Ensuite,Walls,Painting
-Bedroom 1 w/Ensuite,Wardrobe,Carpentry & Joinery
-Bedroom 1 w/Ensuite,Windows,Windows
-Bedroom 2,Carpets,Flooring - Carpets
-Bedroom 2,Ceiling,Painting
-Bedroom 2,Doors,Doors
-Bedroom 2,GPO,Electrical
-Bedroom 2,Light Fixtures,Electrical
-Bedroom 2,Network Router (if applicable),Electrical
-Bedroom 2,Skirting,Carpentry & Joinery
-Bedroom 2,Sliding Glass Door (if applicable),Windows
-Bedroom 2,Walls,Painting
-Bedroom 2,Wardrobe,Carpentry & Joinery
-Bedroom 2,Windows,Windows
-Bedroom 2 w/Ensuite,Bathtub (if applicable),Plumbing
-Bedroom 2 w/Ensuite,Carpets,Flooring - Carpets
-Bedroom 2 w/Ensuite,Ceiling,Painting
-Bedroom 2 w/Ensuite,Doors,Doors
-Bedroom 2 w/Ensuite,Exhaust Fan,Electrical
-Bedroom 2 w/Ensuite,GPO,Electrical
-Bedroom 2 w/Ensuite,Light Fixtures,Electrical
-Bedroom 2 w/Ensuite,Mirror,Carpentry & Joinery
-Bedroom 2 w/Ensuite,Network Router (if applicable),Electrical
-Bedroom 2 w/Ensuite,Shower,Plumbing
-Bedroom 2 w/Ensuite,Sink,Plumbing
-Bedroom 2 w/Ensuite,Skirting,Carpentry & Joinery
-Bedroom 2 w/Ensuite,Tiles,Flooring - Tiles
-Bedroom 2 w/Ensuite,Toilet,Plumbing
-Bedroom 2 w/Ensuite,Walls,Painting
-Bedroom 2 w/Ensuite,Wardrobe,Carpentry & Joinery
-Bedroom 2 w/Ensuite,Windows,Windows
-Bedroom 3,Carpets,Flooring - Carpets
-Bedroom 3,Ceiling,Painting
-Bedroom 3,Doors,Doors
-Bedroom 3,GPO,Electrical
-Bedroom 3,Light Fixtures,Electrical
-Bedroom 3,Network Router (if applicable),Electrical
-Bedroom 3,Skirting,Carpentry & Joinery
-Bedroom 3,Sliding Glass Door (if applicable),Windows
-Bedroom 3,Walls,Painting
-Bedroom 3,Wardrobe,Carpentry & Joinery
-Bedroom 3,Windows,Windows
-Bedroom w/Ensuite,Bathtub (if applicable),Plumbing
-Bedroom w/Ensuite,Carpets,Flooring - Carpets
-Bedroom w/Ensuite,Ceiling,Painting
-Bedroom w/Ensuite,Doors,Doors
-Bedroom w/Ensuite,Exhaust Fan,Electrical
-Bedroom w/Ensuite,GPO,Electrical
-Bedroom w/Ensuite,Light Fixtures,Electrical
-Bedroom w/Ensuite,Mirror,Carpentry & Joinery
-Bedroom w/Ensuite,Network Router (if applicable),Electrical
-Bedroom w/Ensuite,Shower,Plumbing
-Bedroom w/Ensuite,Sink,Plumbing
-Bedroom w/Ensuite,Skirting,Carpentry & Joinery
-Bedroom w/Ensuite,Sliding Glass Door (if applicable),Windows
-Bedroom w/Ensuite,Tiles,Flooring - Tiles
-Bedroom w/Ensuite,Toilet,Plumbing
-Bedroom w/Ensuite,Walls,Painting
-Bedroom w/Ensuite,Wardrobe,Carpentry & Joinery
-Bedroom w/Ensuite,Windows,Windows
-Butler's Pantry,Cabinets/Shelving,Carpentry & Joinery
-Butler's Pantry,Ceiling,Painting
-Butler's Pantry,Flooring,Flooring - Timber
-Butler's Pantry,GPO,Electrical
-Butler's Pantry,Light Fixtures,Electrical
-Butler's Pantry,Sink,Plumbing
-Butler's Pantry (if applicable),Cabinets/Shelving,Carpentry & Joinery
-Butler's Pantry (if applicable),Ceiling,Painting
-Butler's Pantry (if applicable),Flooring,Flooring - Timber
-Butler's Pantry (if applicable),GPO,Electrical
-Butler's Pantry (if applicable),Light Fixtures,Electrical
-Butler's Pantry (if applicable),Sink,Plumbing
-Corridor,Ceiling,Painting
-Corridor,Flooring,Flooring - Timber
-Corridor,Intercom,Electrical
-Corridor,Light Fixtures,Electrical
-Corridor,Skirting,Carpentry & Joinery
-Corridor,Walls,Painting
-Dining & Living Room Area,Ceiling,Painting
-Dining & Living Room Area,Flooring,Flooring - Timber
-Dining & Living Room Area,GPO,Electrical
-Dining & Living Room Area,Light Fixtures,Electrical
-Dining & Living Room Area,Skirting,Carpentry & Joinery
-Dining & Living Room Area,Walls,Painting
-Dining & Living Room Area,Windows (if applicable),Windows
-Downstairs Bathroom,Ceiling,Painting
-Downstairs Bathroom,Doors,Doors
-Downstairs Bathroom,Exhaust Fan,Electrical
-Downstairs Bathroom,GPO,Electrical
-Downstairs Bathroom,Light Fixtures,Electrical
-Downstairs Bathroom,Mirror,Carpentry & Joinery
-Downstairs Bathroom,Shower,Plumbing
-Downstairs Bathroom,Sink,Plumbing
-Downstairs Bathroom,Skirting,Carpentry & Joinery
-Downstairs Bathroom,Tiles,Flooring - Tiles
-Downstairs Bathroom,Toilet,Plumbing
-Downstairs Bathroom,Walls,Painting
-Downstairs Toilet (if applicable),Ceiling,Painting
-Downstairs Toilet (if applicable),Doors,Doors
-Downstairs Toilet (if applicable),Exhaust Fan,Electrical
-Downstairs Toilet (if applicable),Light Fixtures,Electrical
-Downstairs Toilet (if applicable),Sink,Plumbing
-Downstairs Toilet (if applicable),Skirting,Carpentry & Joinery
-Downstairs Toilet (if applicable),Tiles,Flooring - Tiles
-Downstairs Toilet (if applicable),Toilet,Plumbing
-Downstairs Toilet (if applicable),Walls,Painting
-Kitchen Area,Cabinets,Carpentry & Joinery
 Kitchen Area,Ceiling,Painting
 Kitchen Area,Dishwasher,Plumbing
-Kitchen Area,Dishwasher (if applicable),Plumbing
 Kitchen Area,Flooring,Flooring - Timber
 Kitchen Area,GPO,Electrical
-Kitchen Area,Kitchen Sink,Plumbing
-Kitchen Area,Kitchen Table Tops,Carpentry & Joinery
 Kitchen Area,Light Fixtures,Electrical
 Kitchen Area,Rangehood,Appliances
-Kitchen Area,Splashbacks,Painting
 Kitchen Area,Stovetop and Oven,Appliances
-Laundry Room,Cold/Hot Water Outlets,Plumbing
+Living Room,Ceiling,Painting
+Living Room,Flooring,Flooring - Timber
+Living Room,GPO,Electrical
+Living Room,Light Fixtures,Electrical
+Living Room,Walls,Painting
 Laundry Room,Doors,Doors
-Laundry Room,Drainage,Plumbing
-Laundry Room,Exhaust Fan,Electrical
 Laundry Room,GPO,Electrical
 Laundry Room,Laundry Sink,Plumbing
 Laundry Room,Light Fixtures,Electrical
-Laundry Room,Skirting,Carpentry & Joinery
 Laundry Room,Tiles,Flooring - Tiles
-Laundry Room,Walls,Painting
-Laundry Room,Windows (if applicable),Windows
-Laundry Section,Cold/Hot Water Outlets,Plumbing
-Laundry Section,Doors,Doors
-Laundry Section,Drainage,Plumbing
-Laundry Section,Exhaust Fan,Electrical
-Laundry Section,GPO,Electrical
-Laundry Section,Laundry Sink,Plumbing
-Laundry Section,Light Fixtures,Electrical
-Laundry Section,Skirting,Carpentry & Joinery
-Laundry Section,Tiles,Flooring - Tiles
-Laundry Section,Walls,Painting
-Staircase,Ceiling,Painting
-Staircase,Light Fixtures,Electrical
-Staircase,Railing (if applicable),Carpentry & Joinery
-Staircase,Skirting,Carpentry & Joinery
-Staircase,Staircase,Carpentry & Joinery
-Staircase,Walls,Painting
-Study Area (if applicable),Desk,Carpentry & Joinery
-Study Area (if applicable),GPO,Electrical
-Study Area (if applicable),Light Fixtures,Electrical
-Study Area (if applicable),Skirting,Carpentry & Joinery
-Study Area (if applicable),Walls,Painting
-Upstair Corridor,Ceiling,Painting
-Upstair Corridor,Flooring,Flooring - Timber
-Upstair Corridor,Light Fixtures,Electrical
-Upstair Corridor,Skirting,Carpentry & Joinery
-Upstair Corridor,Walls,Painting
-Upstairs Bathroom,Bathtub (if applicable),Plumbing
-Upstairs Bathroom,Ceiling,Painting
-Upstairs Bathroom,Doors,Doors
-Upstairs Bathroom,Exhaust Fan,Electrical
-Upstairs Bathroom,GPO,Electrical
-Upstairs Bathroom,Light Fixtures,Electrical
-Upstairs Bathroom,Mirror,Carpentry & Joinery
-Upstairs Bathroom,Shower,Plumbing
-Upstairs Bathroom,Sink,Plumbing
-Upstairs Bathroom,Skirting,Carpentry & Joinery
-Upstairs Bathroom,Tiles,Flooring - Tiles
-Upstairs Bathroom,Toilet,Plumbing
-Upstairs Bathroom,Walls,Painting"""
+Laundry Room,Walls,Painting"""
     
     st.download_button(
         "📥 Download Template",
@@ -1213,15 +562,6 @@ if uploaded_csv is not None:
             st.error(f"❌ Error processing data: {e}")
             st.code(traceback.format_exc())
 
-# In your CSV upload section, after: if uploaded_csv is not None:
-if uploaded_csv.size > 50 * 1024 * 1024:  # 50MB limit
-    st.error("❌ File too large. Maximum size is 50MB.")
-    st.stop()
-
-if not uploaded_csv.name.lower().endswith('.csv'):
-    st.error("❌ Please upload a CSV file.")
-    st.stop()
-    
 # STEP 3: Show Results and Download Options
 if st.session_state.processed_data is not None and st.session_state.metrics is not None:
     st.markdown("""
@@ -1374,26 +714,14 @@ if st.session_state.processed_data is not None and st.session_state.metrics is n
                     else:
                         st.error("❌ Excel generator not available")
                         st.code(f"Import error: {EXCEL_IMPORT_ERROR}")
-                        st.stop()
+                        st.stop()  # Use st.stop() instead of return
                     
                     # Generate Word if available
                     word_bytes = None
                     if WORD_REPORT_AVAILABLE:
                         try:
                             from word_report_generator import generate_professional_word_report
-                            # Try enhanced version first, fallback to basic version
-                            try:
-                                doc = generate_professional_word_report(
-                                    st.session_state.processed_data, 
-                                    metrics, 
-                                    st.session_state.report_images
-                                )
-                            except TypeError:
-                                # Fallback to old version without images
-                                doc = generate_professional_word_report(
-                                    st.session_state.processed_data, 
-                                    metrics
-                                )
+                            doc = generate_professional_word_report(st.session_state.processed_data, metrics)
                             buf = BytesIO()
                             doc.save(buf)
                             buf.seek(0)
@@ -1472,36 +800,14 @@ if st.session_state.processed_data is not None and st.session_state.metrics is n
                 with st.expander("📋 Error Details"):
                     st.code(f"Import error: {WORD_IMPORT_ERROR}")
         else:
-            st.write("Enhanced professional Word document with executive summary, visual analysis, actionable recommendations, and your custom images.")
+            st.write("Professional Word document with executive summary, charts, and detailed analysis.")
             
-            # Show image status for Word report
-            current_images = [k for k, v in st.session_state.report_images.items() if v is not None]
-            if current_images:
-                st.info(f"📸 Will include: {', '.join(current_images)}")
-            else:
-                st.info("💡 Tip: Upload images in the sidebar to enhance your Word report!")
-            
-            if st.button("📄 Generate Enhanced Word Report", type="secondary", use_container_width=True):
+            if st.button("📄 Generate Word Report", type="secondary", use_container_width=True):
                 try:
-                    with st.spinner("Generating enhanced Word report with your images..."):
+                    with st.spinner("Generating professional Word report..."):
                         # Re-import to avoid stale import issues
                         from word_report_generator import generate_professional_word_report
-                        
-                        # Try enhanced version first, fallback to basic version
-                        try:
-                            doc = generate_professional_word_report(
-                                st.session_state.processed_data, 
-                                metrics, 
-                                st.session_state.report_images
-                            )
-                            success_message = "✅ Enhanced Word report generated with your images!"
-                        except TypeError:
-                            # Fallback to old version without images
-                            doc = generate_professional_word_report(
-                                st.session_state.processed_data, 
-                                metrics
-                            )
-                            success_message = "✅ Word report generated (basic version - update word_report_generator.py for image support)"
+                        doc = generate_professional_word_report(st.session_state.processed_data, metrics)
                         
                         # Save to bytes
                         buf = BytesIO()
@@ -1513,9 +819,9 @@ if st.session_state.processed_data is not None and st.session_state.metrics is n
                         from excel_report_generator import generate_filename
                         filename = f"{generate_filename(metrics['building_name'], 'Word')}.docx"
                         
-                        st.success(success_message)
+                        st.success("✅ Professional Word report generated!")
                         st.download_button(
-                            "📥 Download Enhanced Word Report",
+                            "📥 Download Word Report",
                             data=word_bytes,
                             file_name=filename,
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -1636,19 +942,19 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
-# Enhanced Footer with streamlined user info
+# Enhanced Footer with additional information
 st.markdown("---")
-st.markdown(f"""
+st.markdown("""
 <div style="text-align: center; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 2rem; border-radius: 10px; margin-top: 2rem;">
     <h4 style="color: #2E3A47; margin-bottom: 1rem;">🏢 Professional Inspection Report Processor v2.0</h4>
     <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
         <div><strong>📊 Excel Reports:</strong> Multi-sheet analysis</div>
         <div><strong>📄 Word Reports:</strong> Executive summaries</div>
         <div><strong>📈 Native Charts:</strong> Streamlit visualizations</div>
-        <div><strong>🔒 Secure Processing:</strong> Authenticated access</div>
+        <div><strong>🔒 Secure Processing:</strong> Local data handling</div>
     </div>
     <p style="margin-top: 1rem; color: #666; font-size: 0.9em;">
-        Built with Streamlit • Powered by Python • Logged in as: {user['name']}
+        Built with Streamlit • Powered by Python • For technical support, contact your system administrator
     </p>
 </div>
 """, unsafe_allow_html=True)
