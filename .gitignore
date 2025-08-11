@@ -1,9 +1,12 @@
 # Environment variables
 .env
+.env.local
+.env.production
 
 # User data
 users.json
 *.log
+app_activity.log
 
 # Python
 __pycache__/
@@ -31,3 +34,7 @@ Thumbs.db
 # Temporary files
 temp_*.jpg
 temp_*.png
+
+# Reports (optional - remove if you want to track them)
+*.xlsx
+*.docx
