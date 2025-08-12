@@ -359,6 +359,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Hide Streamlit Add this right after st.set_page_config()
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+div[data-testid="stToolbar"] {
+    visibility: hidden;
+    height: 0%;
+    position: fixed;
+}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Custom CSS for professional styling
 st.markdown("""
 <style>
