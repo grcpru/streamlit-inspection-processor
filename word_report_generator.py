@@ -956,7 +956,8 @@ This comprehensive quality assessment was conducted in full accordance with Aust
         data_summary_header.style = 'EnhancedSubsectionHeader'
         
         avg_defects = metrics.get('avg_defects_per_unit', 0)
-        quality_score = max(0, 100 - (avg_defects * 10))
+        defect_rate = metrics.get('defect_rate', 0)
+        quality_score = max(0, 100 - defect_rate)
         
         data_summary_text = f"""**INSPECTION SCOPE & RESULTS**:
 • Total Residential Units Evaluated: {metrics.get('total_units', 0):,}
