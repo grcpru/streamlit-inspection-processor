@@ -353,7 +353,7 @@ def show_user_menu():
 
 # Page configuration
 st.set_page_config(
-    page_title="Professional Inspection Report Processor",
+    page_title="Inspection Report Processor",
     page_icon="🏢",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -448,7 +448,7 @@ if not show_user_menu():
 user = auth_manager.get_current_user()
 st.markdown(f"""
 <div class="main-header">
-    <h1>🏢 Professional Inspection Report Processor</h1>
+    <h1>🏢 Inspection Report Processor</h1>
     <p>Essential Community Management</p>
     <div style="margin-top: 1rem; opacity: 0.9; font-size: 0.9em;">
         <span>👋 Welcome back, <strong>{user['name']}</strong>!</span>
@@ -1447,9 +1447,9 @@ if st.session_state.processed_data is not None and st.session_state.metrics is n
             else:
                 st.info("💡 Tip: Upload images in the sidebar to enhance your Word report!")
             
-            if st.button("📄 Generate Enhanced Word Report", type="secondary", use_container_width=True):
+            if st.button("📄 Generate Word Report", type="secondary", use_container_width=True):
                 try:
-                    with st.spinner("Generating enhanced Word report with your images..."):
+                    with st.spinner("Generating Word report with your images..."):
                         # Re-import to avoid stale import issues
                         from word_report_generator import generate_professional_word_report
                         
