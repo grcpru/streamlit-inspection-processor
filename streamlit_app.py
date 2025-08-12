@@ -304,13 +304,13 @@ def show_user_menu():
         """)
         
         # Simple user actions
-        col1 = st.columns(1)
+        col1, col2 = st.columns(2)
         
         # with col1:
         #    if st.button("🔑 Change Password", use_container_width=True):
         #        st.session_state.show_password_change = True
         
-        with col1:
+        with col2:
             if st.button("🚪 Logout", use_container_width=True, type="primary"):
                 auth_manager.logout()
                 st.success("Logged out successfully!")
