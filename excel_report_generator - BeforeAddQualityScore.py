@@ -1,6 +1,6 @@
 """
-Professional Excel Report Generator for Inspection Reports - UPDATED VERSION
-This module generates professional Excel documents with Development Quality Score
+Professional Excel Report Generator for Inspection Reports
+This module generates professional Excel documents matching the Argyle Square format
 """
 
 import pandas as pd
@@ -12,7 +12,7 @@ import xlsxwriter
 
 def generate_professional_excel_report(final_df, metrics):
     """
-    Generate a professional Excel report with Development Quality Score
+    Generate a professional Excel report matching the Argyle Square format
     
     Args:
         final_df: Processed inspection DataFrame
@@ -74,17 +74,6 @@ def generate_professional_excel_report(final_df, metrics):
         'border': 1,
         'align': 'right',
         'valign': 'vcenter'
-    })
-    
-    # NEW: Special format for Development Quality Score
-    quality_score_format = workbook.add_format({
-        'font_size': 11,
-        'border': 1,
-        'align': 'right',
-        'valign': 'vcenter',
-        'bg_color': '#C8E6C9',  # Light green background
-        'font_color': '#2E7D32',  # Dark green text
-        'bold': True
     })
     
     # Settlement readiness formats with color coding
@@ -194,27 +183,22 @@ def generate_professional_excel_report(final_df, metrics):
     
     current_row += 1
     
-    # Inspection Summary Section (UPDATED WITH QUALITY SCORE)
+    # Inspection Summary Section
     worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', 
                          '📋 INSPECTION SUMMARY', section_header)
     worksheet.set_row(current_row, 25)
     current_row += 2
     
-    # Calculate Development Quality Score
-    defect_rate = metrics.get('defect_rate', 0)
-    quality_score = max(0, 100 - defect_rate)
-    
     inspection_data = [
-        ('Total Inspection Points', f"{metrics['total_inspections']:,}", data_format),
-        ('Total Defects Found', f"{metrics['total_defects']:,}", data_format),
-        ('Overall Defect Rate', f"{metrics['defect_rate']:.2f}%", data_format),
-        ('Average Defects per Unit', f"{metrics['avg_defects_per_unit']:.1f}", data_format),
-        ('Development Quality Score', f"{quality_score:.1f}/100", quality_score_format)  # NEW LINE WITH SPECIAL FORMATTING
+        ('Total Inspection Points', f"{metrics['total_inspections']:,}"),
+        ('Total Defects Found', f"{metrics['total_defects']:,}"),
+        ('Overall Defect Rate', f"{metrics['defect_rate']:.2f}%"),
+        ('Average Defects per Unit', f"{metrics['avg_defects_per_unit']:.1f}")
     ]
     
-    for label, value, cell_format_type in inspection_data:
+    for label, value in inspection_data:
         worksheet.write(current_row, 0, label, label_format)
-        worksheet.write(current_row, 1, value, cell_format_type)
+        worksheet.write(current_row, 1, value, data_format)
         current_row += 1
     
     current_row += 1
@@ -237,28 +221,6 @@ def generate_professional_excel_report(final_df, metrics):
     ]
     
     for label, value, cell_format_type in readiness_data:
-        worksheet.write(current_row, 0, label, label_format)
-        worksheet.write(current_row, 1, value, cell_format_type)
-        current_row += 1
-    
-    current_row += 1
-    
-    # NEW: Quality Score Analysis Section
-    worksheet.merge_range(f'A{current_row + 1}:B{current_row + 1}', 
-                         '🎯 QUALITY SCORE ANALYSIS', section_header)
-    worksheet.set_row(current_row, 25)
-    current_row += 2
-    
-    # Quality score interpretation
-    quality_interpretation = get_quality_score_interpretation(quality_score)
-    quality_analysis_data = [
-        ('Component Pass Rate', f"{quality_score:.1f}%", quality_score_format),
-        ('Quality Grade', quality_interpretation['grade'], data_format),
-        ('Industry Benchmark', quality_interpretation['benchmark'], data_format),
-        ('Recommended Action', quality_interpretation['action'], data_format)
-    ]
-    
-    for label, value, cell_format_type in quality_analysis_data:
         worksheet.write(current_row, 0, label, label_format)
         worksheet.write(current_row, 1, value, cell_format_type)
         current_row += 1
@@ -323,62 +285,13 @@ def generate_professional_excel_report(final_df, metrics):
     if len(metrics['component_details_summary']) > 0:
         create_data_sheet(workbook, metrics['component_details_summary'], "🔍 Component Details", table_header, cell_format, alt_row_format)
     
-    # ===== METADATA SHEET (UPDATED WITH QUALITY SCORE) =====
+    # ===== METADATA SHEET =====
     create_metadata_sheet(workbook, metrics, table_header, cell_format)
     
     # Close workbook and return buffer
     workbook.close()
     excel_buffer.seek(0)
     return excel_buffer
-
-
-def get_quality_score_interpretation(quality_score):
-    """
-    NEW FUNCTION: Interpret quality score and provide context
-    
-    Args:
-        quality_score: Calculated quality score (0-100)
-        
-    Returns:
-        dict: Quality interpretation data
-    """
-    
-    if quality_score >= 98:
-        return {
-            'grade': 'Excellent (A+)',
-            'benchmark': 'Above Industry Standard',
-            'action': 'Maintain current standards'
-        }
-    elif quality_score >= 95:
-        return {
-            'grade': 'Very Good (A)',
-            'benchmark': 'Industry Leading',
-            'action': 'Minor quality improvements'
-        }
-    elif quality_score >= 90:
-        return {
-            'grade': 'Good (B+)',
-            'benchmark': 'Above Average',
-            'action': 'Targeted improvements'
-        }
-    elif quality_score >= 85:
-        return {
-            'grade': 'Satisfactory (B)',
-            'benchmark': 'Industry Average',
-            'action': 'Quality enhancement needed'
-        }
-    elif quality_score >= 75:
-        return {
-            'grade': 'Below Average (C)',
-            'benchmark': 'Below Industry Standard',
-            'action': 'Significant improvements required'
-        }
-    else:
-        return {
-            'grade': 'Poor (D)',
-            'benchmark': 'Well Below Standard',
-            'action': 'Comprehensive quality overhaul'
-        }
 
 
 def create_data_sheet(workbook, data_df, sheet_name, header_format, cell_format, alt_row_format):
@@ -437,7 +350,7 @@ def create_settlement_sheet(workbook, metrics, header_format, cell_format, ready
 
 
 def create_metadata_sheet(workbook, metrics, header_format, cell_format):
-    """Create report metadata sheet (UPDATED WITH QUALITY SCORE)"""
+    """Create report metadata sheet"""
     
     worksheet = workbook.add_worksheet("📄 Report Metadata")
     worksheet.set_column('A:A', 25)
@@ -446,20 +359,12 @@ def create_metadata_sheet(workbook, metrics, header_format, cell_format):
     melbourne_tz = pytz.timezone('Australia/Melbourne')
     melbourne_time = datetime.now(melbourne_tz)
     
-    # Calculate quality score for metadata
-    defect_rate = metrics.get('defect_rate', 0)
-    quality_score = max(0, 100 - defect_rate)
-    quality_interpretation = get_quality_score_interpretation(quality_score)
-    
     metadata = [
         ('Report Generated', melbourne_time.strftime('%Y-%m-%d %H:%M:%S AEDT')),
         ('Report Version', '2.0 Professional'),
         ('Building Name', metrics['building_name']),
         ('Total Units', str(metrics['total_units'])),
         ('Total Defects', str(metrics['total_defects'])),
-        ('Development Quality Score', f"{quality_score:.1f}/100"),  # NEW
-        ('Quality Grade', quality_interpretation['grade']),  # NEW
-        ('Industry Benchmark', quality_interpretation['benchmark']),  # NEW
         ('Data Source', 'iAuditor CSV Export'),
         ('Processing Engine', 'Professional Inspection Report Processor'),
         ('Charts Included', 'Yes'),
@@ -502,8 +407,9 @@ def generate_filename(building_name, report_type="Excel"):
     return filename
 
 
+# Test function
 def test_excel_generator():
-    """Test function to verify Excel generator is working with quality score"""
+    """Test function to verify Excel generator is working"""
     try:
         # Create sample data for testing
         sample_data = pd.DataFrame({
@@ -523,7 +429,7 @@ def test_excel_generator():
             'total_units': 2,
             'total_inspections': 2,
             'total_defects': 1,
-            'defect_rate': 50.0,  # 50% defect rate for testing
+            'defect_rate': 50.0,
             'avg_defects_per_unit': 0.5,
             'ready_units': 1,
             'minor_work_units': 1,
@@ -547,13 +453,10 @@ def test_excel_generator():
         # Generate Excel
         excel_buffer = generate_professional_excel_report(sample_data, sample_metrics)
         
-        # Test quality score calculation
-        quality_score = max(0, 100 - sample_metrics['defect_rate'])
-        
         # Test filename generation
         filename = generate_filename("Test Building", "Excel")
         
-        return True, f"Excel generator test successful. Quality Score: {quality_score}/100, Filename: {filename}.xlsx"
+        return True, f"Excel generator test successful. Filename: {filename}.xlsx"
         
     except Exception as e:
         return False, f"Excel generator test failed: {str(e)}"
@@ -563,12 +466,3 @@ if __name__ == "__main__":
     # Run test when module is executed directly
     success, message = test_excel_generator()
     print(f"Test Result: {message}")
-    
-    print("\n✅ UPDATED EXCEL REPORT FEATURES:")
-    print("• Development Quality Score: Component Pass Rate calculation")
-    print("• Quality Score Analysis section with grade interpretation")
-    print("• Special formatting for quality metrics (green highlighting)")
-    print("• Updated metadata sheet with quality information")
-    print("• Quality score interpretation (Excellent/Good/Poor etc.)")
-    print("• Industry benchmark comparisons")
-    print("• Recommended actions based on quality score")
