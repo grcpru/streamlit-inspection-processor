@@ -475,9 +475,9 @@ if "report_images" not in st.session_state:
     st.session_state.report_images = {
         "logo": None,
         "cover": None,
-        "summary_chart": None,
-        "trades_chart": None,
-        "settlement_chart": None
+       # "summary_chart": None,
+       # "trades_chart": None,
+       # "settlement_chart": None
     }
 
 # Sidebar configuration
@@ -507,12 +507,12 @@ with st.sidebar:
         
         with col1:
             logo_upload = st.file_uploader("🏢 Company Logo", type=['png', 'jpg', 'jpeg'], key="logo_upload")
-            cover_upload = st.file_uploader("📷 Cover Image", type=['png', 'jpg', 'jpeg'], key="cover_upload")
-            summary_upload = st.file_uploader("📊 Summary Chart", type=['png', 'jpg', 'jpeg'], key="summary_upload")
+           # summary_upload = st.file_uploader("📊 Summary Chart", type=['png', 'jpg', 'jpeg'], key="summary_upload")
         
         with col2:
-            trades_upload = st.file_uploader("🔧 Trades Chart", type=['png', 'jpg', 'jpeg'], key="trades_upload")
-            settlement_upload = st.file_uploader("🏠 Settlement Chart", type=['png', 'jpg', 'jpeg'], key="settlement_upload")
+            cover_upload = st.file_uploader("📷 Cover Image", type=['png', 'jpg', 'jpeg'], key="cover_upload")
+            # trades_upload = st.file_uploader("🔧 Trades Chart", type=['png', 'jpg', 'jpeg'], key="trades_upload")
+            # settlement_upload = st.file_uploader("🏠 Settlement Chart", type=['png', 'jpg', 'jpeg'], key="settlement_upload")
         
         # Process uploaded images
         if st.button("💾 Save Images for Report"):
@@ -537,26 +537,26 @@ with st.sidebar:
                 st.session_state.report_images["cover"] = cover_path
                 images_saved += 1
                 
-            if summary_upload:
-                summary_path = os.path.join(temp_dir, f"summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-                with open(summary_path, "wb") as f:
-                    f.write(summary_upload.getbuffer())
-                st.session_state.report_images["summary_chart"] = summary_path
-                images_saved += 1
+           # if summary_upload:
+            #    summary_path = os.path.join(temp_dir, f"summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
+            #    with open(summary_path, "wb") as f:
+            #        f.write(summary_upload.getbuffer())
+            #    st.session_state.report_images["summary_chart"] = summary_path
+            #    images_saved += 1
                 
-            if trades_upload:
-                trades_path = os.path.join(temp_dir, f"trades_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-                with open(trades_path, "wb") as f:
-                    f.write(trades_upload.getbuffer())
-                st.session_state.report_images["trades_chart"] = trades_path
-                images_saved += 1
+            #if trades_upload:
+            #    trades_path = os.path.join(temp_dir, f"trades_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
+            #    with open(trades_path, "wb") as f:
+            #        f.write(trades_upload.getbuffer())
+            #    st.session_state.report_images["trades_chart"] = trades_path
+            #    images_saved += 1
                 
-            if settlement_upload:
-                settlement_path = os.path.join(temp_dir, f"settlement_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
-                with open(settlement_path, "wb") as f:
-                    f.write(settlement_upload.getbuffer())
-                st.session_state.report_images["settlement_chart"] = settlement_path
-                images_saved += 1
+            #if settlement_upload:
+            #    settlement_path = os.path.join(temp_dir, f"settlement_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
+            #    with open(settlement_path, "wb") as f:
+            #        f.write(settlement_upload.getbuffer())
+            #    st.session_state.report_images["settlement_chart"] = settlement_path
+            #    images_saved += 1
             
             if images_saved > 0:
                 st.success(f"✅ {images_saved} image(s) saved for Word report enhancement!")
