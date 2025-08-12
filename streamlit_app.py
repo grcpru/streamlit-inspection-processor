@@ -1346,17 +1346,14 @@ if st.session_state.processed_data is not None and st.session_state.metrics is n
         if st.button("📦 Generate Complete Package", type="primary", use_container_width=True):
             try:
                 with st.spinner("Generating complete report package..."):
-                    mel_tz = pytz.timezone("Australia/Melbourne")
-                    timestamp = datetime.now(mel_tz).strftime("%Y%m%d_%H%M%S")
-                    
-                    # Generate Excel using professional generator
+                # Generate Excel using professional generator
                     if EXCEL_REPORT_AVAILABLE:
-                        excel_bytes = generate_professional_excel_report(st.session_state.processed_data, metrics)
+                        excel_buffer = generate_professional_excel_report(st.session_state.processed_data, metrics)
+                        excel_bytes = excel_buffer.getvalue()  # ← FIX: Convert BytesIO to bytes
                     else:
                         st.error("❌ Excel generator not available")
-                        st.code(f"Import error: {EXCEL_IMPORT_ERROR}")
                         st.stop()
-                    
+                                
                     # Generate Word if available
                     word_bytes = None
                     if WORD_REPORT_AVAILABLE:
