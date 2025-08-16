@@ -594,7 +594,7 @@ def process_inspection_data(df, mapping, building_info):
             return "Not OK"
 
     def classify_urgency(val, component, room):
-        """Classify defects by urgency level - Enhanced to show real urgent defects"""
+        """Classify defects by urgency level"""
         if pd.isna(val):
             return "Normal"
         
@@ -602,33 +602,22 @@ def process_inspection_data(df, mapping, building_info):
         component_str = str(component).lower()
         room_str = str(room).lower()
         
-        # Urgent keywords in defect values
-        urgent_keywords = ["urgent", "immediate", "safety", "hazard", "dangerous", "critical", "severe", "broken", "not working", "fail", "failed"]
+        # Urgent keywords
+        urgent_keywords = ["urgent", "immediate", "safety", "hazard", "dangerous", "critical", "severe"]
         
-        # Safety-critical components that should be urgent
-        urgent_components = [
-            "fire", "smoke", "electrical", "gas", "security", "lock", "door locks", "door handle", 
-            "self latching", "exhaust fan", "gpo", "light fixtures", "drainage", "water", "toilet", "shower"
-        ]
-        
-        # Entry/safety related rooms
-        critical_rooms = ["apartment entry door", "balcony", "bathroom", "kitchen"]
+        # Safety-critical components
+        safety_components = ["fire", "smoke", "electrical", "gas", "water", "security", "lock", "door handle"]
         
         # Check for urgent keywords in the value
         if any(keyword in val_str for keyword in urgent_keywords):
             return "Urgent"
         
         # Check for safety-critical components
-        if any(urgent_comp in component_str for urgent_comp in urgent_components):
-            return "Urgent"
-        
-        # Entry door issues and safety rooms are urgent
-        if any(critical in room_str for critical in critical_rooms):
+        if any(safety in component_str for safety in safety_components):
             return "High Priority"
         
-        # Default high priority components
-        high_priority_components = ["door", "window", "mirror", "tiles", "paint", "ceiling", "walls"]
-        if any(hp_comp in component_str for hp_comp in high_priority_components):
+        # Entry door issues are high priority
+        if "entry" in room_str and "door" in component_str:
             return "High Priority"
             
         return "Normal"
@@ -642,31 +631,17 @@ def process_inspection_data(df, mapping, building_info):
     # Fill missing trades with "Unknown Trade"
     merged["Trade"] = merged["Trade"].fillna("Unknown Trade")
     
-    # Add planned completion dates with more realistic urgency distribution
-    def assign_planned_completion(urgency, component, room):
+    # Add planned completion dates (simulated for demo - in real app this would come from data)
+    def assign_planned_completion(urgency):
         base_date = datetime.now()
-        
-        # More aggressive urgent classification for demo purposes
-        component_str = str(component).lower()
-        room_str = str(room).lower()
-        
-        # Force some items to be urgent for demo (every 3rd electrical/plumbing item)
-        if ("electrical" in component_str or "plumbing" in component_str or 
-            "door" in component_str or "safety" in component_str or
-            hash(str(component) + str(room)) % 3 == 0):  # Every 3rd item for demo
-            return base_date + timedelta(days=2), "Urgent"
-        
         if urgency == "Urgent":
-            return base_date + timedelta(days=3), urgency
+            return base_date + timedelta(days=3)
         elif urgency == "High Priority":
-            return base_date + timedelta(days=7), urgency
+            return base_date + timedelta(days=7)
         else:
-            return base_date + timedelta(days=14), urgency
+            return base_date + timedelta(days=14)
     
-    # Apply completion dates and update urgency for demo
-    completion_data = merged.apply(lambda row: assign_planned_completion(row["Urgency"], row["Component"], row["Room"]), axis=1)
-    merged["PlannedCompletion"] = completion_data.apply(lambda x: x[0])
-    merged["Urgency"] = completion_data.apply(lambda x: x[1])  # Update urgency based on realistic classification
+    merged["PlannedCompletion"] = merged["Urgency"].apply(assign_planned_completion)
     
     final_df = merged[["Unit", "UnitType", "Room", "Component", "StatusClass", "Trade", "Urgency", "PlannedCompletion"]]
     
@@ -765,122 +740,28 @@ def process_inspection_data(df, mapping, building_info):
     
     return final_df, metrics
 
-def lookup_lot_defects_with_status(processed_data, lot_number):
-    """Enhanced lot/unit lookup with complete defect history and status tracking"""
-    if processed_data is None or lot_number is None:
-        return pd.DataFrame(), {}
-    
-    # Search for lot/unit number (case insensitive, flexible matching)
-    all_data = processed_data[
-        processed_data["Unit"].astype(str).str.strip().str.lower() == str(lot_number).strip().lower()
-    ].copy()
-    
-    if len(all_data) == 0:
-        return pd.DataFrame(), {}
-    
-    # Get ALL records (both defects and OK items) for complete history
-    defects_data = all_data[all_data["StatusClass"] == "Not OK"].copy()
-    ok_data = all_data[all_data["StatusClass"] == "OK"].copy()
-    
-    # Calculate status metrics
-    total_inspections = len(all_data)
-    total_defects = len(defects_data)
-    total_ok = len(ok_data)
-    defect_rate = (total_defects / total_inspections * 100) if total_inspections > 0 else 0
-    
-    # Status breakdown by urgency
-    urgent_count = len(defects_data[defects_data["Urgency"] == "Urgent"]) if len(defects_data) > 0 else 0
-    high_priority_count = len(defects_data[defects_data["Urgency"] == "High Priority"]) if len(defects_data) > 0 else 0
-    normal_count = len(defects_data[defects_data["Urgency"] == "Normal"]) if len(defects_data) > 0 else 0
-    
-    # Trade breakdown
-    trade_breakdown = defects_data.groupby("Trade").size().to_dict() if len(defects_data) > 0 else {}
-    
-    # Room breakdown
-    room_breakdown = defects_data.groupby("Room").size().to_dict() if len(defects_data) > 0 else {}
-    
-    # Status determination
-    if urgent_count > 0:
-        unit_status = "🚨 URGENT ATTENTION REQUIRED"
-        status_color = "error"
-    elif high_priority_count > 0:
-        unit_status = "⚠️ HIGH PRIORITY WORK NEEDED"
-        status_color = "warning"
-    elif normal_count > 0:
-        unit_status = "🔧 STANDARD WORK REQUIRED"
-        status_color = "info"
-    else:
-        unit_status = "✅ READY FOR HANDOVER"
-        status_color = "success"
-    
-    # Prepare defects data for display
-    if len(defects_data) > 0:
-        # Sort by urgency and planned completion
-        urgency_order = {"Urgent": 1, "High Priority": 2, "Normal": 3}
-        defects_data["UrgencySort"] = defects_data["Urgency"].map(urgency_order).fillna(3)
-        defects_data = defects_data.sort_values(["UrgencySort", "PlannedCompletion"])
-        
-        # Format dates
-        defects_data["PlannedCompletion"] = pd.to_datetime(defects_data["PlannedCompletion"]).dt.strftime("%Y-%m-%d")
-        
-        defects_display = defects_data[["Room", "Component", "Trade", "Urgency", "PlannedCompletion"]].copy()
-    else:
-        defects_display = pd.DataFrame(columns=["Room", "Component", "Trade", "Urgency", "PlannedCompletion"])
-    
-    # Create comprehensive status summary
-    status_summary = {
-        "lot_number": lot_number,
-        "unit_status": unit_status,
-        "status_color": status_color,
-        "total_inspections": total_inspections,
-        "total_defects": total_defects,
-        "total_ok": total_ok,
-        "defect_rate": defect_rate,
-        "urgent_count": urgent_count,
-        "high_priority_count": high_priority_count,
-        "normal_count": normal_count,
-        "trade_breakdown": trade_breakdown,
-        "room_breakdown": room_breakdown,
-        "completion_readiness": "Ready" if total_defects == 0 else "Not Ready"
-    }
-    
-    return defects_display, status_summary
-
-def get_lot_completion_timeline(processed_data, lot_number):
-    """Get completion timeline for a specific lot"""
-    if processed_data is None or lot_number is None:
+def lookup_unit_defects(processed_data, unit_number):
+    """Lookup defect history for a specific unit"""
+    if processed_data is None or unit_number is None:
         return pd.DataFrame()
     
-    lot_defects = processed_data[
-        (processed_data["Unit"].astype(str).str.strip().str.lower() == str(lot_number).strip().lower()) &
+    unit_data = processed_data[
+        (processed_data["Unit"].astype(str).str.strip().str.lower() == str(unit_number).strip().lower()) &
         (processed_data["StatusClass"] == "Not OK")
     ].copy()
     
-    if len(lot_defects) == 0:
-        return pd.DataFrame()
+    if len(unit_data) > 0:
+        # Sort by urgency and planned completion
+        urgency_order = {"Urgent": 1, "High Priority": 2, "Normal": 3}
+        unit_data["UrgencySort"] = unit_data["Urgency"].map(urgency_order).fillna(3)
+        unit_data = unit_data.sort_values(["UrgencySort", "PlannedCompletion"])
+        
+        # Format planned completion dates
+        unit_data["PlannedCompletion"] = pd.to_datetime(unit_data["PlannedCompletion"]).dt.strftime("%Y-%m-%d")
+        
+        return unit_data[["Room", "Component", "Trade", "Urgency", "PlannedCompletion"]]
     
-    # Group by planned completion date
-    timeline = lot_defects.groupby(["PlannedCompletion", "Urgency"]).size().reset_index(name="DefectCount")
-    timeline["PlannedCompletion"] = pd.to_datetime(timeline["PlannedCompletion"]).dt.strftime("%Y-%m-%d")
-    timeline = timeline.sort_values("PlannedCompletion")
-    
-    return timeline
-
-def search_lots_by_criteria(processed_data, search_criteria):
-    """Search for lots based on various criteria"""
-    if processed_data is None:
-        return []
-    
-    all_lots = processed_data["Unit"].unique()
-    
-    if not search_criteria:
-        return sorted(all_lots)
-    
-    # Search by partial match
-    search_lower = str(search_criteria).lower()
-    matching_lots = [lot for lot in all_lots if search_lower in str(lot).lower()]
-    
-    return sorted(matching_lots)
+    return pd.DataFrame(columns=["Room", "Component", "Trade", "Urgency", "PlannedCompletion"])
 
 # Sidebar configuration
 with st.sidebar:
@@ -898,39 +779,45 @@ with st.sidebar:
     else:
         st.info("⏳ Step 2: Process data")
     
-    # Simplified Lot/Unit Lookup Section in Sidebar
+    # Unit Lookup Section
     if st.session_state.processed_data is not None:
         st.markdown("---")
-        st.header("🔍 Quick Unit Search")
+        st.header("🔍 Quick Unit Lookup")
         
         # Get all unique units for dropdown
         all_units = sorted(st.session_state.processed_data["Unit"].unique())
         
-        # Simple searchable dropdown
+        # Unit search
         selected_unit = st.selectbox(
-            "Search Unit:",
+            "Select Unit Number:",
             options=[""] + all_units,
-            help="Type or select unit number"
+            help="Quick lookup of defects for any unit"
         )
         
         if selected_unit:
-            defects_data, status_summary = lookup_lot_defects_with_status(st.session_state.processed_data, selected_unit)
+            unit_defects = lookup_unit_defects(st.session_state.processed_data, selected_unit)
             
-            # Compact display in sidebar
-            st.markdown(f"**🏠 Unit {selected_unit}**")
-            
-            if status_summary["total_defects"] == 0:
-                st.success("✅ Ready!")
-            else:
-                # Show compact status
-                if status_summary["urgent_count"] > 0:
-                    st.error(f"🚨 {status_summary['urgent_count']} Urgent")
-                if status_summary["high_priority_count"] > 0:
-                    st.warning(f"⚠️ {status_summary['high_priority_count']} High Priority")
-                if status_summary["normal_count"] > 0:
-                    st.info(f"🔧 {status_summary['normal_count']} Normal")
+            if len(unit_defects) > 0:
+                st.markdown(f"**🏠 Unit {selected_unit} Defects:**")
                 
-                st.caption(f"Total: {status_summary['total_defects']} defects")
+                # Count by urgency
+                urgent_count = len(unit_defects[unit_defects["Urgency"] == "Urgent"])
+                high_priority_count = len(unit_defects[unit_defects["Urgency"] == "High Priority"])
+                normal_count = len(unit_defects[unit_defects["Urgency"] == "Normal"])
+                
+                if urgent_count > 0:
+                    st.error(f"🚨 {urgent_count} Urgent")
+                if high_priority_count > 0:
+                    st.warning(f"⚠️ {high_priority_count} High Priority")
+                if normal_count > 0:
+                    st.info(f"ℹ️ {normal_count} Normal")
+                
+                # Show defects in compact format
+                for _, defect in unit_defects.iterrows():
+                    urgency_icon = "🚨" if defect["Urgency"] == "Urgent" else "⚠️" if defect["Urgency"] == "High Priority" else "🔧"
+                    st.caption(f"{urgency_icon} {defect['Room']} - {defect['Component']} ({defect['Trade']}) - Due: {defect['PlannedCompletion']}")
+            else:
+                st.success(f"✅ Unit {selected_unit} has no defects!")
     
     st.markdown("---")
     
@@ -1494,187 +1381,86 @@ if st.session_state.processed_data is not None and st.session_state.metrics is n
             help="Percentage of units ready for immediate handover"
         )
     
-    # Enhanced Lot/Unit Lookup in Main Area with Complete History
+    # Enhanced Unit Lookup in Main Area
     st.markdown("---")
     st.markdown("""
     <div class="unit-lookup-container">
-        <h3 style="text-align: center; margin-bottom: 1rem;">🔍 Complete Lot/Unit Lookup System</h3>
-        <p style="text-align: center;">Search and view complete defect history and status for any lot number</p>
+        <h3 style="text-align: center; margin-bottom: 1rem;">🔍 Unit Defect Lookup</h3>
+        <p style="text-align: center;">Quickly search for any unit's complete defect history</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Enhanced search interface
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        # Get all unique lots for search
-        all_lots = sorted(st.session_state.processed_data["Unit"].unique())
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # Get all unique units for search
+        all_units = sorted(st.session_state.processed_data["Unit"].unique())
         
-        # Search input with suggestions
-        search_lot = st.text_input(
-            "🔍 Search Lot Number:",
-            placeholder="Type to search for lot numbers...",
-            help="Start typing to find lot numbers",
-            key="main_lot_search"
+        # Enhanced unit search with autocomplete
+        search_unit = st.selectbox(
+            "🏠 Enter or Select Unit Number:",
+            options=[""] + all_units,
+            help="Type to search or select from dropdown",
+            key="main_unit_search"
         )
         
-        # Filter and display matching lots
-        if search_lot:
-            filtered_lots = search_lots_by_criteria(st.session_state.processed_data, search_lot)
-            if filtered_lots:
-                selected_lot = st.selectbox(
-                    "📋 Select from matching lots:",
-                    options=[""] + filtered_lots,
-                    help="Choose from filtered results"
+        if search_unit:
+            unit_defects = lookup_unit_defects(st.session_state.processed_data, search_unit)
+            
+            if len(unit_defects) > 0:
+                st.markdown(f"### 📋 Unit {search_unit} - Complete Defect Report")
+                
+                # Summary metrics for this unit
+                col1, col2, col3, col4 = st.columns(4)
+                
+                urgent_count = len(unit_defects[unit_defects["Urgency"] == "Urgent"])
+                high_priority_count = len(unit_defects[unit_defects["Urgency"] == "High Priority"])
+                normal_count = len(unit_defects[unit_defects["Urgency"] == "Normal"])
+                total_defects = len(unit_defects)
+                
+                with col1:
+                    st.metric("🚨 Urgent", urgent_count)
+                with col2:
+                    st.metric("⚠️ High Priority", high_priority_count)
+                with col3:
+                    st.metric("🔧 Normal", normal_count)
+                with col4:
+                    st.metric("📊 Total Defects", total_defects)
+                
+                # Detailed defect table
+                st.markdown("**📋 Detailed Defect List:**")
+                
+                # Format the data for display
+                display_data = unit_defects.copy()
+                display_data["Urgency"] = display_data["Urgency"].apply(
+                    lambda x: f"🚨 {x}" if x == "Urgent" 
+                    else f"⚠️ {x}" if x == "High Priority" 
+                    else f"🔧 {x}"
                 )
-            else:
-                st.warning(f"No lots found matching '{search_lot}'")
-                selected_lot = None
-        else:
-            selected_lot = st.selectbox(
-                "🏠 Or select from all lots:",
-                options=[""] + all_lots,
-                help="Choose from all available lots"
-            )
-    
-    with col2:
-        if st.session_state.processed_data is not None:
-            total_lots = len(all_lots)
-            defective_lots = len(st.session_state.processed_data[st.session_state.processed_data["StatusClass"] == "Not OK"]["Unit"].unique())
-            ready_lots = total_lots - defective_lots
-            
-            st.metric("📊 Total Lots", total_lots)
-            st.metric("✅ Ready Lots", ready_lots)
-            st.metric("🔧 Lots with Defects", defective_lots)
-    
-    # Display detailed lot information
-    if selected_lot:
-        defects_data, status_summary = lookup_lot_defects_with_status(st.session_state.processed_data, selected_lot)
-        
-        st.markdown(f"## 📋 Lot {selected_lot} - Complete Inspection Report")
-        
-        # Status header
-        if status_summary["status_color"] == "error":
-            st.error(f"🚨 **{status_summary['unit_status']}**")
-        elif status_summary["status_color"] == "warning":
-            st.warning(f"⚠️ **{status_summary['unit_status']}**")
-        elif status_summary["status_color"] == "info":
-            st.info(f"🔧 **{status_summary['unit_status']}**")
-        else:
-            st.success(f"✅ **{status_summary['unit_status']}**")
-        
-        # Summary metrics
-        col1, col2, col3, col4, col5 = st.columns(5)
-        
-        with col1:
-            st.metric("🏠 Lot Number", selected_lot)
-        with col2:
-            st.metric("📊 Total Inspections", status_summary["total_inspections"])
-        with col3:
-            st.metric("🚨 Total Defects", status_summary["total_defects"])
-        with col4:
-            st.metric("✅ Items OK", status_summary["total_ok"])
-        with col5:
-            st.metric("📈 Defect Rate", f"{status_summary['defect_rate']:.1f}%")
-        
-        # Priority breakdown
-        st.markdown("### ⚡ Priority Breakdown")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if status_summary["urgent_count"] > 0:
-                st.error(f"🚨 **{status_summary['urgent_count']} Urgent Defects**")
-            else:
-                st.success("🚨 **0 Urgent Defects**")
-        
-        with col2:
-            if status_summary["high_priority_count"] > 0:
-                st.warning(f"⚠️ **{status_summary['high_priority_count']} High Priority**")
-            else:
-                st.success("⚠️ **0 High Priority**")
-        
-        with col3:
-            if status_summary["normal_count"] > 0:
-                st.info(f"🔧 **{status_summary['normal_count']} Normal Priority**")
-            else:
-                st.success("🔧 **0 Normal Priority**")
-        
-        # Trade and Room breakdowns
-        if status_summary["trade_breakdown"] or status_summary["room_breakdown"]:
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("### 👷 Defects by Trade")
-                if status_summary["trade_breakdown"]:
-                    for trade, count in sorted(status_summary["trade_breakdown"].items(), key=lambda x: x[1], reverse=True):
-                        st.markdown(f"- **{trade}:** {count} defect(s)")
-                else:
-                    st.success("No trade defects")
-            
-            with col2:
-                st.markdown("### 🚪 Defects by Room")
-                if status_summary["room_breakdown"]:
-                    for room, count in sorted(status_summary["room_breakdown"].items(), key=lambda x: x[1], reverse=True):
-                        st.markdown(f"- **{room}:** {count} defect(s)")
-                else:
-                    st.success("No room defects")
-        
-        # Detailed defect table
-        if len(defects_data) > 0:
-            st.markdown("### 📋 Complete Defect History")
-            
-            # Format the data for display
-            display_data = defects_data.copy()
-            display_data["Urgency"] = display_data["Urgency"].apply(
-                lambda x: f"🚨 {x}" if x == "Urgent" 
-                else f"⚠️ {x}" if x == "High Priority" 
-                else f"🔧 {x}"
-            )
-            
-            st.dataframe(
-                display_data,
-                use_container_width=True,
-                column_config={
-                    "Room": st.column_config.TextColumn("🚪 Room", width="medium"),
-                    "Component": st.column_config.TextColumn("🔧 Component", width="medium"), 
-                    "Trade": st.column_config.TextColumn("👷 Trade", width="medium"),
-                    "Urgency": st.column_config.TextColumn("⚡ Priority", width="small"),
-                    "PlannedCompletion": st.column_config.TextColumn("📅 Due Date", width="small")
-                }
-            )
-            
-            # Completion timeline
-            timeline_data = get_lot_completion_timeline(st.session_state.processed_data, selected_lot)
-            if len(timeline_data) > 0:
-                st.markdown("### 📅 Work Completion Timeline")
+                
                 st.dataframe(
-                    timeline_data,
+                    display_data,
                     use_container_width=True,
                     column_config={
-                        "PlannedCompletion": st.column_config.TextColumn("📅 Due Date", width="medium"),
-                        "Urgency": st.column_config.TextColumn("⚡ Priority", width="medium"),
-                        "DefectCount": st.column_config.NumberColumn("🔢 Defects Due", width="small")
+                        "Room": st.column_config.TextColumn("🚪 Room", width="medium"),
+                        "Component": st.column_config.TextColumn("🔧 Component", width="medium"),
+                        "Trade": st.column_config.TextColumn("👷 Trade", width="medium"),
+                        "Urgency": st.column_config.TextColumn("⚡ Priority", width="small"),
+                        "PlannedCompletion": st.column_config.DateColumn("📅 Due Date", width="small")
                     }
                 )
-            
-            # Action recommendations
-            st.markdown("### 💡 Recommended Actions")
-            if status_summary["urgent_count"] > 0:
-                st.error(f"🚨 **IMMEDIATE ACTION REQUIRED:** {status_summary['urgent_count']} urgent defects need attention within 2-3 days")
-            
-            if status_summary["high_priority_count"] > 0:
-                st.warning(f"⚠️ **PRIORITY SCHEDULING:** {status_summary['high_priority_count']} high priority items should be completed within 1 week")
-            
-            if status_summary["normal_count"] > 0:
-                st.info(f"🔧 **STANDARD WORKFLOW:** {status_summary['normal_count']} normal priority items can be scheduled within 2 weeks")
-            
-            if status_summary["total_defects"] == 0:
-                st.success("🎉 **LOT READY FOR HANDOVER** - No defects found!")
+                
+                # Unit status summary
+                if urgent_count > 0:
+                    st.error(f"🚨 **HIGH ATTENTION REQUIRED** - {urgent_count} urgent defect(s) need immediate attention!")
+                elif high_priority_count > 0:
+                    st.warning(f"⚠️ **PRIORITY WORK** - {high_priority_count} high priority defect(s) to address")
+                elif normal_count > 0:
+                    st.info(f"🔧 **STANDARD WORK** - {normal_count} normal defect(s) to complete")
+                
+            else:
+                st.success(f"🎉 **Unit {search_unit} is DEFECT-FREE!** ✅")
                 st.balloons()
-        
-        else:
-            st.success(f"🎉 **Lot {selected_lot} is DEFECT-FREE and READY FOR HANDOVER!** ✅")
-            st.balloons()
+    
     
     # Summary Tables Section - Enhanced as per Nelson's feedback
     st.markdown("---")
@@ -2120,7 +1906,7 @@ st.markdown(f"""
         <div><strong>🔒 Secure Processing:</strong> Authenticated access</div>
     </div>
     <p style="margin-top: 1rem; color: #666; font-size: 0.9em;">
-        Built with Streamlit • Powered by Python • Enhanced with Nelson's Feedback • Logged in as: {user['name']}
+        Built with Streamlit • Powered by Python • Updated search unit • Logged in as: {user['name']}
     </p>
 </div>
 """, unsafe_allow_html=True)
