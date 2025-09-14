@@ -568,7 +568,7 @@ def create_data_sheet(
         if series is None:
             return pd.Series(dtype="datetime64[ns]")
         s = series.copy()
-        dt = pd.to_datetime(s, errors="coerce", infer_datetime_format=True)
+        dt = pd.to_datetime(s, errors="coerce")
         num = pd.to_numeric(s, errors="coerce")
         maybe_excel = dt.isna() & num.notna() & num.between(20000, 60000)
         dt.loc[maybe_excel] = pd.to_datetime(num.loc[maybe_excel], unit="D", origin="1899-12-30")
