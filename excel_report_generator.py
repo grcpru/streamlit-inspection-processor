@@ -21,7 +21,7 @@ def normalize_excel_date(series: pd.Series) -> pd.Series:
     s = series.copy()
 
     # Try normal parsing first
-    dt = pd.to_datetime(s, errors='coerce', infer_datetime_format=True)
+    dt = pd.to_datetime(s, errors='coerce')
 
     # Excel serial fallback
     num = pd.to_numeric(s, errors='coerce')
@@ -52,7 +52,7 @@ def coerce_to_datetime_cell(value):
         return value
 
     # Try parse
-    dt = pd.to_datetime(value, errors='coerce', infer_datetime_format=True)
+    dt = pd.to_datetime(value, errors='coerce')
     if pd.notna(dt):
         try:
             return dt.to_pydatetime()
