@@ -1,91 +1,301 @@
-# Enhanced Word Report Generator with Professional Formatting
-# Updated: Removed emojis, fixed terminology, corrected quality score calculation
-
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import parse_xml
+from docx.enum.section import WD_SECTION
 from datetime import datetime
 import pandas as pd
 import os
 import tempfile
-import matplotlib.pyplot as plt
-import seaborn as sns
 from io import BytesIO
-import numpy as np
+import re
 
-# Enhanced Darker Pastel Color Palette
-PASTEL_COLORS = {
-    'primary': '#6B91B5',      # Darker soft blue
-    'secondary': '#A68B6E',    # Darker warm beige
-    'accent': '#8BC88B',       # Darker soft green
-    'warning': '#E6A373',      # Darker soft orange
-    'danger': '#D68B8B',       # Darker soft red
-    'neutral': '#B5B5B5',      # Darker light gray
-    'success': '#9DD49D',      # Darker light green
-    'info': '#7DBEF4',         # Darker light blue
-    'dark': '#5A6B78',         # Darker soft gray-blue
-    'light': '#E8E9EA'         # Darker very light gray
-}
+# DEPENDENCY HANDLING - Added safe imports
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib
+    matplotlib.use('Agg')  # Use non-GUI backend for Streamlit
+    MATPLOTLIB_AVAILABLE = True
+    print("matplotlib loaded successfully for Word reports")
+except ImportError as e:
+    MATPLOTLIB_AVAILABLE = False
+    plt = None
+    print(f"matplotlib not available: {e}")
 
-# Enhanced chart color palettes with darker tones
-CHART_PALETTES = {
-    'pastel_blues': ['#B3D4F1', '#8BB8E8', '#6B9BD1', '#4A7FB8', '#3B6B9C', '#2C5580', '#1F4164', '#163048'],
-    'pastel_greens': ['#C1E8C1', '#9DD49D', '#7BC07B', '#5AAC5A', '#4A9C4A', '#3B8C3B', '#2C7C2C', '#1D6C1D'],
-    'pastel_oranges': ['#F4D4A7', '#E6B574', '#D89641', '#CA7D1A', '#B86F14', '#A6610E', '#945308', '#824502'],
-    'pastel_mixed': ['#B3D4F1', '#C1E8C1', '#F4D4A7', '#E8B8D4', '#D4B8E8', '#C8D1E8', '#B8E8D1', '#F1E8A7'],
-    'severity_colors': {
-        'critical': '#E8A8A8',    # Darker light red
-        'extensive': '#E6C288',   # Darker light orange  
-        'major': '#F1E173',       # Darker light yellow
-        'minor': '#B8D4A8',       # Darker light green
-        'ready': '#A8D4A8'        # Darker soft green
-    }
-}
+try:
+    import seaborn as sns
+    SEABORN_AVAILABLE = True
+    print("seaborn loaded successfully for Word reports")
+except ImportError as e:
+    SEABORN_AVAILABLE = False
+    sns = None
+    print(f"seaborn not available: {e}")
+
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+    np = None
+    print("numpy not available - some chart features may be limited")
+
+def remove_blank_pages(doc):
+    """
+    Remove blank pages from the Word document.
+    This function identifies and removes paragraphs that contain only page breaks
+    or are essentially empty.
+    """
+    try:
+        print("Checking for blank pages...")
+        pages_removed = 0
+        paragraphs_to_remove = []
+        
+        # Iterate through all paragraphs
+        for i, paragraph in enumerate(doc.paragraphs):
+            # Check if paragraph is essentially empty or contains only page breaks
+            is_blank_page_candidate = False
+            
+            # Check if paragraph text is empty or only whitespace
+            if not paragraph.text.strip():
+                # Check if paragraph contains only page breaks
+                for run in paragraph.runs:
+                    for elem in run.element:
+                        if elem.tag.endswith('br') and elem.get(qn('w:type')) == 'page':
+                            is_blank_page_candidate = True
+                            break
+                    if is_blank_page_candidate:
+                        break
+                
+                # Also consider completely empty paragraphs as candidates
+                if not paragraph.runs and not paragraph.text.strip():
+                    is_blank_page_candidate = True
+            
+            # Check for consecutive empty paragraphs that might form a blank page
+            if is_blank_page_candidate:
+                # Look ahead to see if there are multiple consecutive empty paragraphs
+                consecutive_empty = 1
+                j = i + 1
+                while j < len(doc.paragraphs) and j < i + 5:  # Check up to 5 paragraphs ahead
+                    next_para = doc.paragraphs[j]
+                    if not next_para.text.strip() and not next_para.runs:
+                        consecutive_empty += 1
+                        j += 1
+                    else:
+                        break
+                
+                # If we have multiple consecutive empty paragraphs, mark them for removal
+                if consecutive_empty >= 2:
+                    for k in range(i, min(i + consecutive_empty, len(doc.paragraphs))):
+                        if k < len(doc.paragraphs) and doc.paragraphs[k] not in paragraphs_to_remove:
+                            paragraphs_to_remove.append(doc.paragraphs[k])
+        
+        # Remove identified blank paragraphs
+        for paragraph in paragraphs_to_remove:
+            try:
+                # Remove the paragraph element from its parent
+                paragraph._element.getparent().remove(paragraph._element)
+                pages_removed += 1
+            except Exception as e:
+                print(f"Could not remove paragraph: {e}")
+                continue
+        
+        # Additional cleanup: Remove excessive consecutive empty paragraphs
+        cleanup_excessive_spacing(doc)
+        
+        if pages_removed > 0:
+            print(f"Removed {pages_removed} blank page elements")
+        else:
+            print("No blank pages detected")
+        
+        return pages_removed
+    
+    except Exception as e:
+        print(f"Error in remove_blank_pages: {e}")
+        return 0
+
+def cleanup_excessive_spacing(doc):
+    """
+    Clean up excessive spacing between sections by removing too many consecutive empty paragraphs.
+    Keeps maximum 2 empty paragraphs between content sections.
+    """
+    try:
+        paragraphs_to_remove = []
+        consecutive_empty_count = 0
+        
+        for i, paragraph in enumerate(doc.paragraphs):
+            # Check if paragraph is empty
+            if not paragraph.text.strip():
+                consecutive_empty_count += 1
+                # If we have more than 2 consecutive empty paragraphs, mark extras for removal
+                if consecutive_empty_count > 2:
+                    paragraphs_to_remove.append(paragraph)
+            else:
+                # Reset counter when we hit non-empty content
+                consecutive_empty_count = 0
+        
+        # Remove excessive empty paragraphs
+        for paragraph in paragraphs_to_remove:
+            try:
+                paragraph._element.getparent().remove(paragraph._element)
+            except Exception as e:
+                print(f"Could not remove excessive spacing paragraph: {e}")
+                continue
+        
+        if len(paragraphs_to_remove) > 0:
+            print(f"Cleaned up {len(paragraphs_to_remove)} excessive spacing elements")
+    
+    except Exception as e:
+        print(f"Error in cleanup_excessive_spacing: {e}")
+
+def optimize_page_breaks(doc):
+    """
+    Optimize page breaks to ensure they're properly placed and not creating blank pages.
+    """
+    try:
+        print("Optimizing page breaks...")
+        optimized_breaks = 0
+        
+        for paragraph in doc.paragraphs:
+            # Check for manual page breaks in empty paragraphs
+            if not paragraph.text.strip():
+                for run in paragraph.runs:
+                    # Look for page break runs in empty paragraphs
+                    for elem in run.element:
+                        if elem.tag.endswith('br') and elem.get(qn('w:type')) == 'page':
+                            # Check if this page break is immediately after content
+                            # If so, it's probably intentional; if not, consider removing
+                            para_index = doc.paragraphs.index(paragraph)
+                            
+                            # Look at previous paragraphs to see if there's recent content
+                            has_recent_content = False
+                            lookback_range = min(3, para_index)
+                            
+                            for j in range(1, lookback_range + 1):
+                                if para_index - j >= 0:
+                                    prev_para = doc.paragraphs[para_index - j]
+                                    if prev_para.text.strip():
+                                        has_recent_content = True
+                                        break
+                            
+                            # If no recent content, this might be an unnecessary page break
+                            if not has_recent_content:
+                                try:
+                                    run.element.remove(elem)
+                                    optimized_breaks += 1
+                                except:
+                                    pass
+        
+        if optimized_breaks > 0:
+            print(f"Optimized {optimized_breaks} page breaks")
+        
+        return optimized_breaks
+    
+    except Exception as e:
+        print(f"Error in optimize_page_breaks: {e}")
+        return 0
+
+def validate_document_structure(doc):
+    """
+    Validate the document structure and provide a summary of content distribution.
+    """
+    try:
+        total_paragraphs = len(doc.paragraphs)
+        empty_paragraphs = sum(1 for p in doc.paragraphs if not p.text.strip())
+        content_paragraphs = total_paragraphs - empty_paragraphs
+        
+        # Count tables
+        table_count = len(doc.tables)
+        
+        print(f"Document structure validation:")
+        print(f"  Total paragraphs: {total_paragraphs}")
+        print(f"  Content paragraphs: {content_paragraphs}")
+        print(f"  Empty paragraphs: {empty_paragraphs}")
+        print(f"  Tables: {table_count}")
+        
+        # Check for potential issues
+        if empty_paragraphs > content_paragraphs:
+            print(f"  WARNING: More empty paragraphs ({empty_paragraphs}) than content paragraphs ({content_paragraphs})")
+        
+        return {
+            'total_paragraphs': total_paragraphs,
+            'content_paragraphs': content_paragraphs,
+            'empty_paragraphs': empty_paragraphs,
+            'table_count': table_count
+        }
+    
+    except Exception as e:
+        print(f"Error in validate_document_structure: {e}")
+        return {}
 
 def generate_enhanced_word_report(processed_data, metrics, images=None):
     """
-    Generate enhanced professional Word report with professional formatting
+    Generate professional Word report matching Report_Modified.docx format
     """
     
     try:
         # Create new document
         doc = Document()
         
-        # Setup enhanced document formatting
-        setup_enhanced_document_formatting(doc)
+        # Setup document formatting with Arial font
+        setup_document_formatting(doc)
         
-        # Enhanced cover page with better visual elements
-        add_enhanced_cover_page(doc, metrics, images)
+        # Add company logo to header if available
+        add_logo_to_header(doc, images)
         
-        # Executive overview with improved layout
-        add_enhanced_executive_overview(doc, metrics)
+        # Cover page with clean layout
+        add_clean_cover_page(doc, metrics, images)
         
-        # Inspection process with visual elements
-        add_enhanced_inspection_process(doc, metrics)
+        # Executive overview
+        add_executive_overview(doc, metrics)
         
-        # Units analysis with enhanced charts
-        add_enhanced_units_analysis(doc, metrics)
+        # Inspection process
+        add_inspection_process(doc, metrics)
         
-        # Enhanced defects analysis
-        add_enhanced_defects_analysis(doc, processed_data, metrics)
+        # Units analysis
+        add_units_analysis(doc, metrics)
         
-        # Data visualization with pastel charts
-        add_enhanced_data_visualization(doc, processed_data, metrics)
+        # Defects analysis
+        add_defects_analysis(doc, processed_data, metrics)
         
-        # Trade-specific summary with better formatting
-        add_enhanced_trade_summary(doc, processed_data, metrics)
+        # Data visualization
+        add_data_visualization(doc, processed_data, metrics)
         
-        # Component breakdown with improved visuals
-        # add_enhanced_component_breakdown(doc, processed_data, metrics)
+        # Trade-specific summary
+        add_trade_summary(doc, processed_data, metrics)
         
-        # Strategic recommendations with better layout
-        add_enhanced_recommendations(doc, metrics)
+        # Component breakdown
+        add_component_breakdown(doc, processed_data, metrics)
         
-        # Professional footer with enhanced design
-        add_enhanced_footer(doc, metrics)
+        # Strategic recommendations
+        add_recommendations(doc, metrics)
+        
+        # Professional footer
+        add_footer(doc, metrics)
+        
+        # POST-PROCESSING: Clean up the document (temporarily disabled for debugging)
+        print("\nPost-processing document...")
+        
+        # Validate initial structure
+        initial_structure = validate_document_structure(doc)
+        
+        # Temporarily disable blank page removal to check if it's causing the issue
+        print("Skipping blank page removal for debugging...")
+        blank_pages_removed = 0  # remove_blank_pages(doc)
+        
+        # Skip page break optimization too
+        print("Skipping page break optimization for debugging...")
+        breaks_optimized = 0  # optimize_page_breaks(doc)
+        
+        # Final validation
+        final_structure = validate_document_structure(doc)
+        
+        print(f"\nDocument optimization complete:")
+        print(f"  Blank page elements removed: {blank_pages_removed}")
+        print(f"  Page breaks optimized: {breaks_optimized}")
+        print(f"  Paragraphs before: {initial_structure.get('total_paragraphs', 0)}")
+        print(f"  Paragraphs after: {final_structure.get('total_paragraphs', 0)}")
         
         return doc
     
@@ -93,171 +303,170 @@ def generate_enhanced_word_report(processed_data, metrics, images=None):
         print(f"Error in generate_enhanced_word_report: {e}")
         return create_error_document(e, metrics)
 
-def setup_enhanced_document_formatting(doc):
-    """Enhanced document formatting with better typography and spacing"""
+def setup_document_formatting(doc):
+    """Setup document formatting with Arial font and clean styling"""
     
-    # Set document margins with more breathing room
+    # Set document margins with top margin = 3cm
     sections = doc.sections
     for section in sections:
-        section.top_margin = Cm(2.5)
+        section.top_margin = Cm(3.0)  # Changed to 3cm as requested
         section.bottom_margin = Cm(2.5)
         section.left_margin = Cm(2.5)
         section.right_margin = Cm(2.5)
     
     styles = doc.styles
     
-    # Enhanced title style with softer colors
-    if 'EnhancedTitle' not in [s.name for s in styles]:
-        title_style = styles.add_style('EnhancedTitle', 1)
+    # Title style - Arial, black
+    if 'CleanTitle' not in [s.name for s in styles]:
+        title_style = styles.add_style('CleanTitle', 1)
         title_font = title_style.font
-        title_font.name = 'Segoe UI'  # Modern font
-        title_font.size = Pt(32)
+        title_font.name = 'Arial'
+        title_font.size = Pt(28)
         title_font.bold = True
-        title_font.color.rgb = RGBColor(75, 133, 150)  # Soft blue-gray
+        title_font.color.rgb = RGBColor(0, 0, 0)  # Black
         title_style.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        title_style.paragraph_format.space_after = Pt(24)
-        title_style.paragraph_format.space_before = Pt(12)
+        title_style.paragraph_format.space_after = Pt(12)
+        title_style.paragraph_format.space_before = Pt(10)
     
-    # Enhanced section header with pastel accent
-    if 'EnhancedSectionHeader' not in [s.name for s in styles]:
-        section_style = styles.add_style('EnhancedSectionHeader', 1)
+    # Section header - Arial, black
+    if 'CleanSectionHeader' not in [s.name for s in styles]:
+        section_style = styles.add_style('CleanSectionHeader', 1)
         section_font = section_style.font
-        section_font.name = 'Segoe UI Semibold'
-        section_font.size = Pt(20)
+        section_font.name = 'Arial'
+        section_font.size = Pt(18)
         section_font.bold = True
-        section_font.color.rgb = RGBColor(104, 142, 173)  # Pastel blue
-        section_style.paragraph_format.space_before = Pt(30)
-        section_style.paragraph_format.space_after = Pt(16)
+        section_font.color.rgb = RGBColor(0, 0, 0)  # Black
+        section_style.paragraph_format.space_before = Pt(20)
+        section_style.paragraph_format.space_after = Pt(10)
         section_style.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
     
-    # Enhanced subsection header
-    if 'EnhancedSubsectionHeader' not in [s.name for s in styles]:
-        subsection_style = styles.add_style('EnhancedSubsectionHeader', 1)
+    # Subsection header - Arial, black
+    if 'CleanSubsectionHeader' not in [s.name for s in styles]:
+        subsection_style = styles.add_style('CleanSubsectionHeader', 1)
         subsection_font = subsection_style.font
-        subsection_font.name = 'Segoe UI Semibold'
-        subsection_font.size = Pt(16)
+        subsection_font.name = 'Arial'
+        subsection_font.size = Pt(14)
         subsection_font.bold = True
-        subsection_font.color.rgb = RGBColor(126, 162, 189)  # Lighter pastel blue
-        subsection_style.paragraph_format.space_before = Pt(20)
-        subsection_style.paragraph_format.space_after = Pt(12)
+        subsection_font.color.rgb = RGBColor(0, 0, 0)  # Black
+        subsection_style.paragraph_format.space_before = Pt(16)
+        subsection_style.paragraph_format.space_after = Pt(8)
     
-    # Enhanced body text with better readability
-    if 'EnhancedBody' not in [s.name for s in styles]:
-        body_style = styles.add_style('EnhancedBody', 1)
+    # Body text - Arial, black
+    if 'CleanBody' not in [s.name for s in styles]:
+        body_style = styles.add_style('CleanBody', 1)
         body_font = body_style.font
-        body_font.name = 'Segoe UI'
-        body_font.size = Pt(12)
-        body_font.color.rgb = RGBColor(70, 70, 70)  # Softer black
-        body_style.paragraph_format.line_spacing = 1.3  # More generous line spacing
-        body_style.paragraph_format.space_after = Pt(8)
+        body_font.name = 'Arial'
+        body_font.size = Pt(11)
+        body_font.color.rgb = RGBColor(0, 0, 0)  # Black
+        body_style.paragraph_format.line_spacing = 1.2
+        body_style.paragraph_format.space_after = Pt(6)
         body_style.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    
-    # Enhanced highlight text style
-    if 'EnhancedHighlight' not in [s.name for s in styles]:
-        highlight_style = styles.add_style('EnhancedHighlight', 1)
-        highlight_font = highlight_style.font
-        highlight_font.name = 'Segoe UI'
-        highlight_font.size = Pt(12)
-        highlight_font.bold = True
-        highlight_font.color.rgb = RGBColor(104, 142, 173)
-        highlight_style.paragraph_format.line_spacing = 1.3
-        highlight_style.paragraph_format.space_after = Pt(8)
 
-def add_enhanced_cover_page(doc, metrics, images=None):
-    """Enhanced cover page with improved layout - shows Inspection Overview if no cover image"""
+def add_logo_to_header(doc, images=None):
+    """Add company logo to document header (left side)"""
     
     try:
-        # Company logo with better positioning
         if images and images.get('logo') and os.path.exists(images['logo']):
-            try:
-                logo_para = doc.add_paragraph()
-                logo_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                logo_run = logo_para.add_run()
-                logo_run.add_picture(images['logo'], width=Inches(3.5))
-                doc.add_paragraph()
-            except Exception:
-                pass
-        
-        # Enhanced main title - REMOVED EMOJIS
+            # Get the header for the first section
+            section = doc.sections[0]
+            header = section.header
+            
+            # Clear existing header content
+            header.paragraphs[0].clear()
+            
+            # Add logo to header
+            header_para = header.paragraphs[0]
+            header_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            header_run = header_para.add_run()
+            
+            # Add logo with appropriate size for header
+            header_run.add_picture(images['logo'], width=Inches(2.0))
+    
+    except Exception as e:
+        print(f"Error adding logo to header: {e}")
+
+def add_clean_cover_page(doc, metrics, images=None):
+    """Add clean cover page matching Report_Modified.docx format"""
+    
+    try:
+        # Main title - split into 2 lines as requested
         title_para = doc.add_paragraph()
-        title_para.style = 'EnhancedTitle'
-        title_run = title_para.add_run("PRE-SETTLEMENT INSPECTION REPORT")
+        title_para.style = 'CleanTitle'
+        title_run = title_para.add_run("PRE-SETTLEMENT\nINSPECTION REPORT")
+        title_run.font.size = Pt(30)  # Slightly smaller for 2-line layout
         
-        # Decorative line - SIMPLIFIED
-        deco_para = doc.add_paragraph()
-        deco_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        deco_run = deco_para.add_run("─────────────────────────────────────────")
-        deco_run.font.color.rgb = RGBColor(166, 139, 110)  # Darker pastel beige
-        deco_run.font.size = Pt(14)
+        # Simple line separator
+        line_para = doc.add_paragraph()
+        line_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        line_run = line_para.add_run("────────────────────────────────────────")
+        line_run.font.name = 'Arial'
+        line_run.font.size = Pt(12)
+        line_run.font.color.rgb = RGBColor(0, 0, 0)
         
-        # Enhanced building name with better styling
+        # Building name
         doc.add_paragraph()
         building_para = doc.add_paragraph()
         building_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         building_run = building_para.add_run(f"{metrics.get('building_name', 'Building Name').upper()}")
-        building_run.font.name = 'Segoe UI Light'
-        building_run.font.size = Pt(24)
-        building_run.font.bold = False
-        building_run.font.color.rgb = RGBColor(107, 145, 181)  # Darker blue
+        building_run.font.name = 'Arial'
+        building_run.font.size = Pt(22)
+        building_run.font.bold = True
+        building_run.font.color.rgb = RGBColor(0, 0, 0)
         
-        # Enhanced address with better formatting
+        # Address
         doc.add_paragraph()
         address_para = doc.add_paragraph()
         address_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         address_run = address_para.add_run(metrics.get('address', 'Address'))
-        address_run.font.name = 'Segoe UI'
+        address_run.font.name = 'Arial'
         address_run.font.size = Pt(14)
-        address_run.font.color.rgb = RGBColor(110, 110, 110)  # Darker gray
+        address_run.font.color.rgb = RGBColor(0, 0, 0)
         
-        # Check if cover image exists and is valid
-        has_cover_image = (images and images.get('cover') and 
-                          os.path.exists(images['cover']))
-        
-        if has_cover_image:
+        # Cover image if available (center, appropriate size)
+        if images and images.get('cover') and os.path.exists(images['cover']):
             try:
-                # Add cover image with optimized spacing
                 doc.add_paragraph()
                 cover_para = doc.add_paragraph()
                 cover_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 cover_run = cover_para.add_run()
-                cover_run.add_picture(images['cover'], width=Inches(5.5))
+                cover_run.add_picture(images['cover'], width=Inches(4.7))  # Adjusted size
                 doc.add_paragraph()
-                
-                # Add compact metrics dashboard after image
-                add_enhanced_metrics_dashboard(doc, metrics)
-                
             except Exception as e:
                 print(f"Error loading cover image: {e}")
-                # Fallback to inspection overview if image fails
-                has_cover_image = False
         
-        if not has_cover_image:
-            # Show Inspection Overview instead of cover image
-            doc.add_paragraph()
-            doc.add_paragraph()
-            
-            # Add decorative inspection overview header - REMOVED EMOJIS
-            overview_header = doc.add_paragraph()
-            overview_header.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            overview_run = overview_header.add_run("INSPECTION OVERVIEW")
-            overview_run.font.name = 'Segoe UI Semibold'
-            overview_run.font.size = Pt(18)
-            overview_run.font.color.rgb = RGBColor(107, 145, 181)  # Darker blue
-            
-            doc.add_paragraph()
-            
-            # Enhanced metrics dashboard takes center stage
-            add_enhanced_metrics_dashboard(doc, metrics)
-        
-        # Enhanced report details - REMOVED EMOJIS, FIXED QUALITY SCORE
+        # Inspection Overview section
         doc.add_paragraph()
-        details_para = doc.add_paragraph()
-        details_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        overview_header = doc.add_paragraph()
+        overview_header.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        overview_run = overview_header.add_run("INSPECTION OVERVIEW")
+        overview_run.font.name = 'Arial'
+        overview_run.font.size = Pt(20)
+        overview_run.font.bold = True
+        overview_run.font.color.rgb = RGBColor(0, 0, 0)
         
-        details_text = f"""Comprehensive Pre-Settlement Quality Assessment
-Residential Unit Inspection & Defect Analysis
-
-Generated on {datetime.now().strftime('%d %B %Y')}
+        # Simple line separator
+        line_para2 = doc.add_paragraph()
+        line_para2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        line_run2 = line_para2.add_run("──────────────────────────────────────────────────")
+        line_run2.font.name = 'Arial'
+        line_run2.font.size = Pt(12)
+        line_run2.font.color.rgb = RGBColor(0, 0, 0)
+        
+        doc.add_paragraph()
+        
+        # Metrics table
+        add_metrics_table(doc, metrics)
+        
+        # Add some space
+        doc.add_paragraph()
+        doc.add_paragraph()
+        doc.add_paragraph()
+        
+        # Report details - moved to bottom left
+        details_para = doc.add_paragraph()
+        details_para.alignment = WD_ALIGN_PARAGRAPH.LEFT  # Changed from CENTER to LEFT
+        
+        details_text = f"""Generated on {datetime.now().strftime('%d %B %Y')}
 
 Inspection Date: {metrics.get('inspection_date', 'N/A')}
 Units Inspected: {metrics.get('total_units', 0):,}
@@ -265,361 +474,219 @@ Components Evaluated: {metrics.get('total_inspections', 0):,}
 Quality Score: {max(0, 100 - metrics.get('defect_rate', 0)):.1f}/100"""
         
         details_run = details_para.add_run(details_text)
-        details_run.font.name = 'Segoe UI'
+        details_run.font.name = 'Arial'
         details_run.font.size = Pt(11)
-        details_run.font.color.rgb = RGBColor(90, 107, 120)  # Darker gray-blue
+        details_run.font.color.rgb = RGBColor(0, 0, 0)
         
         doc.add_page_break()
     
     except Exception as e:
-        print(f"Error in enhanced cover page: {e}")
+        print(f"Error in clean cover page: {e}")
 
-def add_enhanced_metrics_dashboard(doc, metrics):
-    """Enhanced metrics dashboard with pastel colors and better visual appeal"""
+def add_metrics_table(doc, metrics):
+    """Add metrics overview table with colored boxes and white borders"""
     
     try:
-        doc.add_paragraph()
-        doc.add_paragraph()
-        
-        # Add decorative header - REMOVED EMOJIS
-        dashboard_header = doc.add_paragraph()
-        dashboard_header.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        header_run = dashboard_header.add_run("INSPECTION OVERVIEW")
-        header_run.font.name = 'Segoe UI Semibold'
-        header_run.font.size = Pt(16)
-        header_run.font.color.rgb = RGBColor(75, 120, 150)  # Darker blue
-        
+        # Create a regular paragraph first to ensure proper spacing
         doc.add_paragraph()
         
-        # Create enhanced table with better spacing
+        # Create table with colored boxes
         table = doc.add_table(rows=2, cols=3)
         table.alignment = WD_TABLE_ALIGNMENT.CENTER
         
-        # Set column widths
-        for i, width in enumerate([Inches(2.5), Inches(2.5), Inches(2.5)]):
-            table.columns[i].width = width
+        # Set column widths properly
+        table.columns[0].width = Inches(2.4)
+        table.columns[1].width = Inches(2.4)
+        table.columns[2].width = Inches(2.4)
         
-        # Enhanced metrics data - REMOVED EMOJIS, UPDATED TERMINOLOGY
+        # Metrics data with corresponding colors
         metrics_data = [
-            ("TOTAL UNITS", f"{metrics.get('total_units', 0):,}", "Units Inspected", PASTEL_COLORS['info']),
-            ("DEFECTS FOUND", f"{metrics.get('total_defects', 0):,}", f"{metrics.get('defect_rate', 0):.1f}% Rate", PASTEL_COLORS['warning']),
-            ("MINOR WORK REQUIRED", f"{metrics.get('ready_units', 0)}", f"{metrics.get('ready_pct', 0):.1f}%", PASTEL_COLORS['success']),
-            ("INTERMEDIATE WORK", f"{metrics.get('minor_work_units', 0)}", f"{metrics.get('minor_pct', 0):.1f}%", PASTEL_COLORS['accent']),
-            ("MAJOR WORK", f"{metrics.get('major_work_units', 0)}", f"{metrics.get('major_pct', 0):.1f}%", PASTEL_COLORS['warning']),
-            ("EXTENSIVE WORK", f"{metrics.get('extensive_work_units', 0)}", f"{metrics.get('extensive_pct', 0):.1f}%", PASTEL_COLORS['danger'])
+            ("TOTAL UNITS", f"{metrics.get('total_units', 0):,}", "Units Inspected", "A8D3E6"),
+            ("DEFECTS FOUND", f"{metrics.get('total_defects', 0):,}", f"{metrics.get('defect_rate', 0):.1f}% Rate", "F4C2A1"),
+            ("READY UNITS", f"{metrics.get('ready_units', 0)}", f"{metrics.get('ready_pct', 0):.1f}%", "C8E6C9"),
+            ("MINOR WORK", f"{metrics.get('minor_work_units', 0)}", f"{metrics.get('minor_pct', 0):.1f}%", "C8E6C9"),
+            ("MAJOR WORK", f"{metrics.get('major_work_units', 0)}", f"{metrics.get('major_pct', 0):.1f}%", "F4C2A1"),
+            ("EXTENSIVE WORK", f"{metrics.get('extensive_work_units', 0)}", f"{metrics.get('extensive_pct', 0):.1f}%", "F4A6A6")
         ]
         
-        # Fill cells with enhanced styling
+        # Fill cells with colored backgrounds and styling
         for i, (label, value, subtitle, bg_color) in enumerate(metrics_data):
-            row = i // 3
-            col = i % 3
-            cell = table.cell(row, col)
-            cell.vertical_alignment = 1
+            row_idx = i // 3
+            col_idx = i % 3
             
-            # Set subtle background color
-            set_cell_background_color(cell, bg_color.replace('#', ''))
+            try:
+                cell = table.cell(row_idx, col_idx)
+                
+                # Clear existing content
+                cell.text = ""
+                
+                # Set cell background color
+                try:
+                    shading_elm = parse_xml(f'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="{bg_color}"/>')
+                    cell._tc.get_or_add_tcPr().append(shading_elm)
+                except:
+                    pass  # Continue without background color if this fails
+                
+                # Add white borders to create gaps between cells
+                try:
+                    tc = cell._tc
+                    tcPr = tc.get_or_add_tcPr()
+                    
+                    # Add white borders (FFFFFF = white, sz="8" makes it thicker for visible gaps)
+                    borders = parse_xml('''
+                        <w:tcBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+                            <w:top w:val="single" w:sz="20" w:space="0" w:color="FFFFFF"/>
+                            <w:left w:val="single" w:sz="20" w:space="0" w:color="FFFFFF"/>
+                            <w:bottom w:val="single" w:sz="20" w:space="0" w:color="FFFFFF"/>
+                            <w:right w:val="single" w:sz="20" w:space="0" w:color="FFFFFF"/>
+                        </w:tcBorders>
+                    ''')
+                    tcPr.append(borders)
+                except:
+                    pass  # Continue without borders if this fails
+                
+                # Add content to cell
+                para = cell.paragraphs[0]
+                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                
+                # Add padding to create space inside cells
+                para.paragraph_format.space_before = Pt(12)
+                para.paragraph_format.space_after = Pt(12)
+                para.paragraph_format.left_indent = Pt(8)
+                para.paragraph_format.right_indent = Pt(8)
+                
+                # Label
+                label_run = para.add_run(f"{label}\n")
+                label_run.font.name = 'Arial'
+                label_run.font.size = Pt(10)
+                label_run.font.color.rgb = RGBColor(0, 0, 0)
+                label_run.font.bold = False
+                
+                # Value (large number)
+                value_run = para.add_run(f"{value}\n")
+                value_run.font.name = 'Arial'
+                value_run.font.size = Pt(24)
+                value_run.font.bold = True
+                value_run.font.color.rgb = RGBColor(0, 0, 0)
+                
+                # Subtitle
+                subtitle_run = para.add_run(subtitle)
+                subtitle_run.font.name = 'Arial'
+                subtitle_run.font.size = Pt(9)
+                subtitle_run.font.color.rgb = RGBColor(0, 0, 0)
+                subtitle_run.font.bold = False
+                
+            except Exception as cell_error:
+                print(f"Error processing cell {i}: {cell_error}")
+                continue
+        
+        # Add table-level spacing to create overall gaps
+        try:
+            tbl = table._tbl
+            tblPr = tbl.get_or_add_tblPr()
             
-            para = cell.paragraphs[0]
-            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            
-            # Enhanced label styling
-            label_run = para.add_run(f"{label}\n")
-            label_run.font.name = 'Segoe UI'
-            label_run.font.size = Pt(10)
-            label_run.font.color.rgb = RGBColor(70, 70, 70)
-            
-            # Enhanced value styling with darker colors
-            value_run = para.add_run(f"{value}\n")
-            value_run.font.name = 'Segoe UI Semibold'
-            value_run.font.size = Pt(18)
-            value_run.font.bold = True
-            value_run.font.color.rgb = RGBColor(75, 120, 150)  # Darker blue
-            
-            # Enhanced subtitle styling with darker colors
-            subtitle_run = para.add_run(subtitle)
-            subtitle_run.font.name = 'Segoe UI'
-            subtitle_run.font.size = Pt(9)
-            subtitle_run.font.color.rgb = RGBColor(90, 107, 120)  # Darker gray-blue
-    
-    except Exception as e:
-        print(f"Error in enhanced metrics dashboard: {e}")
-
-def create_enhanced_pie_chart(doc, metrics):
-    """Enhanced pie chart showing ALL real trade categories with correct percentages"""
-    
-    try:
-        if 'summary_trade' not in metrics or len(metrics['summary_trade']) == 0:
-            return
+            # Add cell spacing to create gaps between cells
+            cellSpacing = parse_xml('<w:tblCellSpacing xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:w="120" w:type="dxa"/>')
+            tblPr.append(cellSpacing)
+        except:
+            pass
         
-        breakdown_header = doc.add_paragraph("Defects Distribution by Trade Category")
-        breakdown_header.style = 'EnhancedSubsectionHeader'
-        
-        # CHANGED: Use ALL trades - no filtering, no grouping
-        trade_data = metrics['summary_trade'].copy()  # Get every single trade
-        total_defects = metrics.get('total_defects', 0)
-        
-        # Calculate actual percentages for all trades
-        trade_data['ActualPercentage'] = (trade_data['DefectCount'] / total_defects * 100) if total_defects > 0 else 0
-        
-        # Generate enough colors for all trades
-        num_trades = len(trade_data)
-        
-        import matplotlib.pyplot as plt
-        import numpy as np
-        
-        # Use expanded color palette for many trades
-        if num_trades <= 12:
-            # Use nice distinct colors for smaller numbers
-            colors = plt.cm.Set3(np.linspace(0, 1, num_trades))
-        else:
-            # Use full spectrum for many trades
-            colors = plt.cm.tab20(np.linspace(0, 1, min(num_trades, 20)))
-            if num_trades > 20:
-                # Add more colors if needed
-                extra_colors = plt.cm.tab20b(np.linspace(0, 1, num_trades - 20))
-                colors = np.concatenate([colors, extra_colors])
-        
-        # Adjust chart size based on number of trades
-        if num_trades <= 8:
-            figsize = (11, 9)
-            fontsize_labels = 10
-            fontsize_pct = 10
-        elif num_trades <= 15:
-            figsize = (10, 8)
-            fontsize_labels = 10
-            fontsize_pct = 8
-        else:
-            figsize = (15, 13)
-            fontsize_labels = 8
-            fontsize_pct = 7
-        
-        fig, ax = plt.subplots(figsize=figsize)
-        
-        # Create pie chart with ALL real trades
-        wedges, texts, autotexts = ax.pie(
-            trade_data['DefectCount'], 
-            labels=trade_data['Trade'], 
-            colors=colors,
-            autopct='%1.1f%%',  # Show actual percentages
-            startangle=45,
-            textprops={'fontsize': fontsize_labels},
-            wedgeprops={'edgecolor': 'white', 'linewidth': 2},
-            pctdistance=0.85
-        )
-        
-        # Enhanced title
-        ax.set_title(f'Distribution of Defects by Trade Category ({num_trades} Trades)', 
-                    fontsize=18, fontweight='600', pad=25,
-                    color='#4B8596')
-        
-        # Enhanced text styling
-        for autotext in autotexts:
-            autotext.set_color('#2C3E50')
-            autotext.set_fontweight('bold')
-            autotext.set_fontsize(fontsize_pct)
-        
-        for text in texts:
-            text.set_fontsize(fontsize_labels)
-            text.set_color('#34495E')
-            text.set_fontweight('500')
-        
-        # Adjust layout to prevent label cutoff
-        plt.tight_layout()
-        
-        # Add chart to document
-        add_chart_to_document(doc, fig)
-        plt.close()
-        
-        # Summary text showing top trade with correct percentage
-        if len(trade_data) > 0:
-            top_trade = trade_data.iloc[0]
-            summary_text = f"""The analysis reveals {top_trade['Trade']} as the primary defect category, representing {top_trade['DefectCount']} of the total {total_defects:,} defects ({top_trade['ActualPercentage']:.1f}% of all identified issues). This complete analysis covers all {num_trades} trade categories identified during the inspection, providing comprehensive insights into defect distribution patterns."""
-            
-            summary_para = doc.add_paragraph(summary_text)
-            summary_para.style = 'EnhancedBody'
-    
-    except Exception as e:
-        print(f"Error creating enhanced pie chart: {e}")
-
-def create_enhanced_severity_chart(doc, metrics):
-    """Enhanced severity distribution chart with pastel colors"""
-    
-    try:
-        chart_title = doc.add_paragraph("Unit Classification by Defect Severity")
-        chart_title.style = 'EnhancedSubsectionHeader'
-        
-        if 'summary_unit' in metrics and len(metrics['summary_unit']) > 0:
-            fig, ax = plt.subplots(figsize=(12, 7))
-            
-            units_data = metrics['summary_unit']
-            
-            categories = []
-            counts = []
-            colors = []
-            
-            # Critical (25+)
-            critical_count = len(units_data[units_data['DefectCount'] > 25])
-            if critical_count > 0:
-                categories.append('Critical\n(25+ defects)')
-                counts.append(critical_count)
-                colors.append(CHART_PALETTES['severity_colors']['critical'])
-            
-            # Extensive (15-24)
-            extensive_count = len(units_data[(units_data['DefectCount'] >= 15) & (units_data['DefectCount'] <= 25)])
-            categories.append('Extensive\n(15-24 defects)')
-            counts.append(extensive_count)
-            colors.append(CHART_PALETTES['severity_colors']['extensive'])
-            
-            # Major (8-14)
-            major_count = len(units_data[(units_data['DefectCount'] >= 8) & (units_data['DefectCount'] <= 14)])
-            categories.append('Major\n(8-14 defects)')
-            counts.append(major_count)
-            colors.append(CHART_PALETTES['severity_colors']['major'])
-            
-            # Minor (3-7)
-            minor_count = len(units_data[(units_data['DefectCount'] >= 3) & (units_data['DefectCount'] <= 7)])
-            categories.append('Minor\n(3-7 defects)')
-            counts.append(minor_count)
-            colors.append(CHART_PALETTES['severity_colors']['minor'])
-            
-            # Ready (0-2)
-            ready_count = len(units_data[units_data['DefectCount'] <= 2])
-            categories.append('Ready\n(0-2 defects)')
-            counts.append(ready_count)
-            colors.append(CHART_PALETTES['severity_colors']['ready'])
-            
-            # Create enhanced bar chart
-            bars = ax.bar(categories, counts, color=colors, alpha=0.8, 
-                         edgecolor='white', linewidth=2.5)
-            
-            # Enhanced styling
-            ax.set_ylabel('Number of Units', fontsize=14, fontweight='600', color='#4B8596')
-            ax.set_title('Unit Distribution by Defect Severity Level', 
-                        fontsize=18, fontweight='600', pad=25, color='#4B8596')
-            ax.grid(axis='y', alpha=0.3, linestyle=':', color='gray')
-            ax.set_facecolor('#FAFBFC')
-            
-            # Enhanced value labels with styling
-            for bar, value in zip(bars, counts):
-                if value > 0:
-                    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(counts)*0.01,
-                           f'{value}', ha='center', va='bottom', 
-                           fontweight='bold', fontsize=13, color='#2C3E50')
-            
-            # Style the axes
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['left'].set_color('#BDC3C7')
-            ax.spines['bottom'].set_color('#BDC3C7')
-            
-            plt.xticks(rotation=0, fontsize=11)
-            plt.tight_layout()
-            add_chart_to_document(doc, fig)
-            plt.close()
-    
-    except Exception as e:
-        print(f"Error creating enhanced severity chart: {e}")
-
-def add_enhanced_data_visualization(doc, processed_data, metrics):
-    """Enhanced data visualization section with pastel charts"""
-    
-    try:
-        header = doc.add_paragraph("COMPREHENSIVE DATA VISUALISATION")
-        header.style = 'EnhancedSectionHeader'
-        
-        # Add section description
-        intro_text = "This section presents visual analytics of the inspection data, highlighting key patterns and trends to support strategic decision-making and resource allocation."
-        intro_para = doc.add_paragraph(intro_text)
-        intro_para.style = 'EnhancedBody'
-        
+        # Add spacing after table
         doc.add_paragraph()
-        
-        # Enhanced pie chart with pastel colors
-        create_enhanced_pie_chart(doc, metrics)
-        
-        # Enhanced severity distribution chart
-        create_enhanced_severity_chart(doc, metrics)
-        
-        # Enhanced trade analysis chart
-        # create_enhanced_trade_chart(doc, metrics)
-        
-        doc.add_page_break()
     
     except Exception as e:
-        print(f"Error in enhanced data visualisation: {e}")
+        print(f"Error in metrics table: {e}")
+        # Fallback: Add text-based metrics if table fails
+        try:
+            fallback_para = doc.add_paragraph("INSPECTION METRICS:")
+            fallback_para.style = 'CleanSubsectionHeader'
+            
+            metrics_text = f"""Total Units: {metrics.get('total_units', 0):,}
+Defects Found: {metrics.get('total_defects', 0):,} ({metrics.get('defect_rate', 0):.1f}% Rate)
+Ready Units: {metrics.get('ready_units', 0)} ({metrics.get('ready_pct', 0):.1f}%)
+Minor Work: {metrics.get('minor_work_units', 0)} ({metrics.get('minor_pct', 0):.1f}%)
+Major Work: {metrics.get('major_work_units', 0)} ({metrics.get('major_pct', 0):.1f}%)
+Extensive Work: {metrics.get('extensive_work_units', 0)} ({metrics.get('extensive_pct', 0):.1f}%)"""
+            
+            fallback_text_para = doc.add_paragraph(metrics_text)
+            fallback_text_para.style = 'CleanBody'
+        except:
+            pass
 
-def create_enhanced_trade_chart(doc, metrics):
-    """Enhanced trade analysis chart with gradient colors"""
+def set_cell_borders(cell):
+    """Set clean borders for table cells"""
+    try:
+        tc = cell._tc
+        tcPr = tc.get_or_add_tcPr()
+        
+        # Add light borders
+        borders = parse_xml('''
+            <w:tcBorders xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+                <w:top w:val="single" w:sz="4" w:space="0" w:color="D0D0D0"/>
+                <w:left w:val="single" w:sz="4" w:space="0" w:color="D0D0D0"/>
+                <w:bottom w:val="single" w:sz="4" w:space="0" w:color="D0D0D0"/>
+                <w:right w:val="single" w:sz="4" w:space="0" w:color="D0D0D0"/>
+            </w:tcBorders>
+        ''')
+        tcPr.append(borders)
+    except Exception as e:
+        print(f"Could not set cell borders: {e}")
+
+def set_cell_background_color(cell, color_hex):
+    """Set cell background color with hex color code"""
     
     try:
-        trade_header = doc.add_paragraph("Trade Category Performance Analysis")
-        trade_header.style = 'EnhancedSubsectionHeader'
+        shading_elm = parse_xml(f'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="{color_hex}"/>')
+        cell._tc.get_or_add_tcPr().append(shading_elm)
+    except Exception as e:
+        print(f"Could not set cell background color: {e}")
+
+def add_formatted_text_with_bold(paragraph, text, style_name='CleanBody'):
+    """Add text with **bold** formatting support"""
+    
+    try:
+        # Split text by **bold** markers
+        parts = re.split(r'\*\*(.*?)\*\*', text)
         
-        if 'summary_trade' not in metrics or len(metrics['summary_trade']) == 0:
-            return
+        for i, part in enumerate(parts):
+            if i % 2 == 0:  # Regular text
+                if part:
+                    run = paragraph.add_run(part)
+                    run.font.name = 'Arial'
+                    run.font.size = Pt(11)
+                    run.font.color.rgb = RGBColor(0, 0, 0)
+            else:  # Bold text (inside ** **)
+                run = paragraph.add_run(part)
+                run.font.name = 'Arial'
+                run.font.size = Pt(11)
+                run.font.color.rgb = RGBColor(0, 0, 0)
+                run.font.bold = True
         
-        top_trades = metrics['summary_trade'].head(10)
-        
-        fig, ax = plt.subplots(figsize=(13, 9))
-        
-        # Create gradient color scheme
-        colors = plt.cm.Pastel1(np.linspace(0, 1, len(top_trades)))
-        
-        # Create horizontal bar chart with enhanced styling
-        y_pos = np.arange(len(top_trades))
-        bars = ax.barh(y_pos, top_trades['DefectCount'], 
-                      color=colors, alpha=0.85, 
-                      edgecolor='white', linewidth=2)
-        
-        # Enhanced styling
-        ax.set_yticks(y_pos)
-        ax.set_yticklabels(top_trades['Trade'], fontsize=12, color='#2C3E50')
-        ax.set_xlabel('Number of Defects', fontsize=14, fontweight='600', color='#4B8596')
-        ax.set_title('Trade Categories Ranked by Defect Frequency', 
-                    fontsize=18, fontweight='600', pad=30, color='#4B8596')
-        
-        # Enhanced grid and background
-        ax.grid(axis='x', alpha=0.3, linestyle=':', color='gray')
-        ax.set_facecolor('#FAFBFC')
-        
-        # Enhanced value labels with percentage
-        total_defects = metrics.get('total_defects', 1)
-        for i, (bar, value) in enumerate(zip(bars, top_trades['DefectCount'])):
-            percentage = (value / total_defects * 100) if total_defects > 0 else 0
-            ax.text(bar.get_width() + max(top_trades['DefectCount']) * 0.02, 
-                   bar.get_y() + bar.get_height()/2,
-                   f'{value} ({percentage:.1f}%)', va='center', 
-                   fontweight='600', fontsize=11, color='#2C3E50')
-        
-        # Style the axes
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_color('#BDC3C7')
-        ax.spines['bottom'].set_color('#BDC3C7')
-        
-        plt.tight_layout()
-        add_chart_to_document(doc, fig)
-        plt.close()
+        paragraph.style = style_name
     
     except Exception as e:
-        print(f"Error creating enhanced trade chart: {e}")
+        # Fallback: just add the text normally
+        run = paragraph.add_run(text)
+        run.font.name = 'Arial'
+        run.font.size = Pt(11)
+        run.font.color.rgb = RGBColor(0, 0, 0)
+        paragraph.style = style_name
 
-def add_enhanced_executive_overview(doc, metrics):
-    """Enhanced executive overview with better formatting and visual elements"""
+def add_executive_overview(doc, metrics):
+    """Add executive overview section"""
     
     try:
         header = doc.add_paragraph("EXECUTIVE OVERVIEW")
-        header.style = 'EnhancedSectionHeader'
+        header.style = 'CleanSectionHeader'
         
-        # Add visual separator
-        separator = doc.add_paragraph()
-        separator.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        sep_run = separator.add_run("────────────────────────────────────────────────────────")
-        sep_run.font.color.rgb = RGBColor(196, 164, 132)
-        sep_run.font.size = Pt(8)
-        
-        doc.add_paragraph()
-        
+        # Add line separator
+        line_para = doc.add_paragraph()
+        line_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        line_run = line_para.add_run("───────────────────────────────────────────────────────────────")
+        line_run.font.name = 'Arial'
+        line_run.font.size = Pt(10)
+        line_run.font.color.rgb = RGBColor(0, 0, 0)
+                
         overview_text = f"""This comprehensive quality assessment encompasses the systematic evaluation of {metrics.get('total_units', 0):,} residential units within {metrics.get('building_name', 'the building complex')}, conducted on {metrics.get('inspection_date', 'the inspection date')}. This report was compiled on {datetime.now().strftime('%d %B %Y')}.
 
 **Inspection Methodology**: Each unit underwent thorough room-by-room evaluation covering all major building components, including structural elements, mechanical systems, finishes, fixtures, and fittings. The assessment follows industry-standard protocols for pre-settlement quality verification.
@@ -628,61 +695,32 @@ def add_enhanced_executive_overview(doc, metrics):
 
 **Strategic Insights**: The data reveals systematic patterns across trade categories, with concentrated defect types requiring targeted remediation strategies. This analysis enables optimized resource allocation and realistic timeline planning for completion preparation."""
         
-        overview_para = doc.add_paragraph(overview_text)
-        overview_para.style = 'EnhancedBody'
+        overview_para = doc.add_paragraph()
+        add_formatted_text_with_bold(overview_para, overview_text)
         
         doc.add_page_break()
     
     except Exception as e:
-        print(f"Error in enhanced executive overview: {e}")
+        print(f"Error in executive overview: {e}")
 
-def add_chart_to_document(doc, fig):
-    """Enhanced helper function to add charts with better positioning"""
-    
-    try:
-        chart_buffer = BytesIO()
-        fig.savefig(chart_buffer, format='png', dpi=300, bbox_inches='tight', 
-                    facecolor='white', edgecolor='none', pad_inches=0.2)
-        chart_buffer.seek(0)
-        
-        chart_para = doc.add_paragraph()
-        chart_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        chart_run = chart_para.add_run()
-        chart_run.add_picture(chart_buffer, width=Inches(7))
-        
-        doc.add_paragraph()
-    
-    except Exception as e:
-        print(f"Error adding enhanced chart: {e}")
-
-def set_cell_background_color(cell, color_hex):
-    """Enhanced cell background color with opacity support"""
-    
-    try:
-        shading_elm = parse_xml(f'<w:shd xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" w:fill="{color_hex}"/>')
-        cell._tc.get_or_add_tcPr().append(shading_elm)
-    except Exception as e:
-        print(f"Could not set cell background color: {e}")
-
-def add_enhanced_inspection_process(doc, metrics):
-    """Enhanced inspection process with visual elements and better formatting"""
+def add_inspection_process(doc, metrics):
+    """Add inspection process section"""
     
     try:
         header = doc.add_paragraph("INSPECTION PROCESS & METHODOLOGY")
-        header.style = 'EnhancedSectionHeader'
+        header.style = 'CleanSectionHeader'
         
-        # Add decorative line
+        # Decorative line - shortened as requested
         deco_para = doc.add_paragraph()
-        deco_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        deco_run = deco_para.add_run("⟦ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ⟧")
-        deco_run.font.color.rgb = RGBColor(196, 164, 132)
+        deco_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        deco_run = deco_para.add_run("───────────────────────────────────────────────────────────────")  # Shortened line
+        deco_run.font.name = 'Arial'
         deco_run.font.size = Pt(10)
-        
-        doc.add_paragraph()
-        
-        # Scope section with enhanced formatting
+        deco_run.font.color.rgb = RGBColor(0, 0, 0)
+                
+        # Scope section
         scope_header = doc.add_paragraph("INSPECTION SCOPE & STANDARDS")
-        scope_header.style = 'EnhancedSubsectionHeader'
+        scope_header.style = 'CleanSubsectionHeader'
         
         scope_text = f"""The comprehensive pre-settlement quality assessment was systematically executed across all {metrics.get('total_units', 0):,} residential units, encompassing detailed evaluation of {metrics.get('total_inspections', 0):,} individual components and building systems.
 
@@ -702,69 +740,77 @@ def add_enhanced_inspection_process(doc, metrics):
 • Kitchen and bathroom fixture functionality
 • Built-in storage and joinery craftsmanship"""
         
-        scope_para = doc.add_paragraph(scope_text)
-        scope_para.style = 'EnhancedBody'
+        scope_para = doc.add_paragraph()
+        add_formatted_text_with_bold(scope_para, scope_text)
         
         doc.add_paragraph()
         
         # Quality criteria section
         criteria_header = doc.add_paragraph("QUALITY ASSESSMENT CRITERIA")
-        criteria_header.style = 'EnhancedSubsectionHeader'
+        criteria_header.style = 'CleanSubsectionHeader'
         
         criteria_text = """Classification methodology follows systematic evaluation protocols:
 
 **Compliant Status**: Component meets required standards and specifications, ready for handover
+
 **Defect Status**: Component requires remediation or adjustment before final handover  
+
 **Not Applicable**: Component not present, accessible, or relevant to specific unit configuration
 
 Each assessment point is documented with photographic evidence and detailed descriptions to facilitate efficient remediation workflows."""
         
-        criteria_para = doc.add_paragraph(criteria_text)
-        criteria_para.style = 'EnhancedBody'
+        criteria_para = doc.add_paragraph()
+        add_formatted_text_with_bold(criteria_para, criteria_text)
         
         doc.add_paragraph()
         
-        # Defect level framework section - UPDATED TERMINOLOGY
+        # Defect level framework section
         readiness_header = doc.add_paragraph("DEFECT LEVEL FRAMEWORK")
-        readiness_header.style = 'EnhancedSubsectionHeader'
+        readiness_header.style = 'CleanSubsectionHeader'
         
         readiness_text = """Units are categorized using evidence-based defect thresholds and estimated remediation timeframes:
 
-**Minor Work Required** (0-2 defects)
+🟢**Ready for Settlement** (0-2 defects)
    Immediate handover capability with minor or cosmetic issues only
 
-**Intermediate Work Required** (3-7 defects)  
+**🟡 Minor Work Required** (3-7 defects)  
    1-3 days estimated remediation time for quick fixes and adjustments
 
-**Major Work Required** (8-15 defects)
+**🟠 Major Work Required** (8-15 defects)
    1-2 weeks estimated completion for substantial repairs and installations
 
-**Extensive Work Required** (15+ defects)
+**🔴 Extensive Work Required** (15+ defects)
    2-4 weeks estimated timeframe for comprehensive remediation and quality upgrades"""
         
-        readiness_para = doc.add_paragraph(readiness_text)
-        readiness_para.style = 'EnhancedBody'
+        readiness_para = doc.add_paragraph()
+        add_formatted_text_with_bold(readiness_para, readiness_text)
         
         doc.add_page_break()
     
     except Exception as e:
-        print(f"Error in enhanced inspection process: {e}")
+        print(f"Error in inspection process: {e}")
 
-def add_enhanced_units_analysis(doc, metrics):
-    """Enhanced units analysis with improved charts and formatting"""
+def add_units_analysis(doc, metrics):
+    """Add units analysis section"""
     
     try:
         header = doc.add_paragraph("UNITS REQUIRING PRIORITY ATTENTION")
-        header.style = 'EnhancedSectionHeader'
+        header.style = 'CleanSectionHeader'
         
+        # Decorative line - shortened as requested
+        deco_para = doc.add_paragraph()
+        deco_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        deco_run = deco_para.add_run("───────────────────────────────────────────────────────────────")  # Shortened line
+        deco_run.font.name = 'Arial'
+        deco_run.font.size = Pt(10)
+        deco_run.font.color.rgb = RGBColor(0, 0, 0)
+
         if 'summary_unit' in metrics and len(metrics['summary_unit']) > 0:
-            # Create enhanced charts
-            create_enhanced_units_horizontal_chart(doc, metrics)
-            # create_enhanced_severity_chart(doc, metrics)
+            # Create chart
+            create_units_chart(doc, metrics)
             
-            # Enhanced summary analysis
+            # Analysis text with bold formatting
             top_unit = metrics['summary_unit'].iloc[0]
-            total_units = metrics.get('total_units', 0)
             
             summary_text = f"""**Priority Analysis Results**: Unit {top_unit['Unit']} requires immediate priority attention with {top_unit['DefectCount']} identified defects, representing the highest concentration of remediation needs within the development.
 
@@ -776,96 +822,99 @@ def add_enhanced_units_analysis(doc, metrics):
 
 **Strategic Insights**: This distribution pattern enables targeted resource deployment and realistic timeline forecasting for completion preparation activities. The concentration of defects in specific units suggests opportunities for parallel remediation workflows and optimized trade scheduling."""
             
-            summary_para = doc.add_paragraph(summary_text)
-            summary_para.style = 'EnhancedBody'
+            summary_para = doc.add_paragraph()
+            add_formatted_text_with_bold(summary_para, summary_text)
         
         doc.add_page_break()
     
     except Exception as e:
-        print(f"Error in enhanced units analysis: {e}")
+        print(f"Error in units analysis: {e}")
 
-def create_enhanced_units_horizontal_chart(doc, metrics):
-    """Enhanced horizontal chart for top units with gradient colors"""
+def create_units_chart(doc, metrics):
+    """Create units chart with legend"""
+    
+    if not MATPLOTLIB_AVAILABLE:
+        add_text_units_summary(doc, metrics)
+        return
     
     try:
-        if 'summary_unit' not in metrics or len(metrics['summary_unit']) == 0:
-            return
-        
         chart_title = doc.add_paragraph("Top 20 Units Requiring Immediate Intervention")
-        chart_title.style = 'EnhancedSubsectionHeader'
+        chart_title.style = 'CleanSubsectionHeader'
         
         top_units = metrics['summary_unit'].head(20)
         
         if len(top_units) > 0:
-            fig, ax = plt.subplots(figsize=(14, 11))
+            fig, ax = plt.subplots(figsize=(16, 12))
             
-            # Enhanced color coding with pastel gradients
+            # Color coding based on defect severity
             colors = []
             for count in top_units['DefectCount']:
                 if count > 25:
-                    colors.append('#E8A8A8')  # Darker light red
-                elif count > 15:
-                    colors.append('#E6C288')  # Darker light orange
-                elif count > 7:
-                    colors.append('#F1E173')  # Darker light yellow
-                elif count > 2:
-                    colors.append('#B8D4A8')  # Darker light green
+                    colors.append('#ff9999')  # Light red for critical
+                elif count >= 15:
+                    colors.append('#ffcc99')  # Light orange for extensive
+                elif count >= 8:
+                    colors.append('#ffff99')  # Light yellow for major
+                elif count >= 3:
+                    colors.append('#99ff99')  # Light green for minor
                 else:
-                    colors.append('#A8D4A8')  # Darker soft green
+                    colors.append('#99ccff')  # Light blue for ready
             
-            # Create enhanced chart
-            y_pos = np.arange(len(top_units))
-            bars = ax.barh(y_pos, top_units['DefectCount'], color=colors, alpha=0.8, 
-                          edgecolor='white', linewidth=2)
+            if NUMPY_AVAILABLE:
+                y_pos = np.arange(len(top_units))
+            else:
+                y_pos = list(range(len(top_units)))
             
-            # Enhanced styling
+            bars = ax.barh(y_pos, top_units['DefectCount'], color=colors, alpha=0.8)
+            
             ax.set_yticks(y_pos)
-            ax.set_yticklabels([f"Unit {unit}" for unit in top_units['Unit']], 
-                              fontsize=12, color='#2C3E50')
-            ax.set_xlabel('Number of Defects', fontsize=14, fontweight='600', color='#4B8596')
+            ax.set_yticklabels([f"Unit {unit}" for unit in top_units['Unit']], fontsize=14)
+            ax.set_xlabel('Number of Defects', fontsize=16, fontweight='600')
             ax.set_title('Units Ranked by Defect Concentration (Priority Order)',
-                        fontsize=18, fontweight='600', pad=25, color='#4B8596')
+                        fontsize=18, fontweight='600', pad=25)
             
-            # Enhanced grid and background
-            ax.grid(axis='x', alpha=0.3, linestyle=':', color='gray')
-            ax.set_facecolor('#FAFBFC')
+            ax.grid(axis='x', alpha=0.3, linestyle=':')
             
-            # Enhanced value labels
+            # Value labels
             for i, (bar, value) in enumerate(zip(bars, top_units['DefectCount'])):
                 ax.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height()/2,
-                       f'{value}', va='center', fontweight='bold', fontsize=12, color='#2C3E50')
+                       f'{value}', va='center', fontweight='bold', fontsize=12)
             
-            # Enhanced legend with darker pastel colors
+            # Add legend with proper colors - FIXED
             from matplotlib.patches import Patch
             legend_elements = [
-                Patch(facecolor='#E8A8A8', label='Critical (25+ defects)', alpha=0.8),
-                Patch(facecolor='#E6C288', label='Extensive (15-24 defects)', alpha=0.8),
-                Patch(facecolor='#F1E173', label='Major (8-14 defects)', alpha=0.8),
-                Patch(facecolor='#B8D4A8', label='Intermediate (3-7 defects)', alpha=0.8),
-                Patch(facecolor='#A8D4A8', label='Minor (0-2 defects)', alpha=0.8)
+                Patch(facecolor='#ff9999', label='Critical (25+ defects)', alpha=0.8),
+                Patch(facecolor='#ffcc99', label='Extensive (15-24 defects)', alpha=0.8),
+                Patch(facecolor='#ffff99', label='Major (8-14 defects)', alpha=0.8),
+                Patch(facecolor='#99ff99', label='Minor (3-7 defects)', alpha=0.8),
+                Patch(facecolor='#99ccff', label='Ready (0-2 defects)', alpha=0.8)
             ]
-            ax.legend(handles=legend_elements, loc='upper right', fontsize=11, framealpha=0.9)
-            
-            # Style the axes
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['left'].set_color('#BDC3C7')
-            ax.spines['bottom'].set_color('#BDC3C7')
+            ax.legend(handles=legend_elements, loc='upper right', fontsize=14, framealpha=0.9)
             
             plt.tight_layout()
             add_chart_to_document(doc, fig)
             plt.close()
     
     except Exception as e:
-        print(f"Error creating enhanced units chart: {e}")
+        print(f"Error creating units chart: {e}")
 
-def add_enhanced_defects_analysis(doc, processed_data, metrics):
-    """Enhanced defects analysis with better visual presentation"""
+def add_defects_analysis(doc, processed_data, metrics):
+    """Add defects analysis section"""
     
     try:
         header = doc.add_paragraph("DEFECT PATTERNS & ANALYSIS")
-        header.style = 'EnhancedSectionHeader'
+        header.style = 'CleanSectionHeader'
         
+        # Decorative line - shortened as requested
+        deco_para = doc.add_paragraph()
+        deco_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        deco_run = deco_para.add_run("───────────────────────────────────────────────────────────────")  # Shortened line
+        deco_run.font.name = 'Arial'
+        deco_run.font.size = Pt(10)
+        deco_run.font.color.rgb = RGBColor(0, 0, 0)
+        
+        doc.add_paragraph()
+
         if 'summary_trade' in metrics and len(metrics['summary_trade']) > 0:
             top_trade = metrics['summary_trade'].iloc[0]
             total_defects = metrics.get('total_defects', 0)
@@ -877,158 +926,248 @@ def add_enhanced_defects_analysis(doc, processed_data, metrics):
 
 **Strategic Implications**: The clustering of defects within specific trade categories suggests that focused remediation efforts targeting the top 3-4 trade categories could address approximately 60-80% of all identified issues, enabling efficient resource deployment and accelerated completion timelines."""
             
-            defects_para = doc.add_paragraph(defects_text)
-            defects_para.style = 'EnhancedBody'
+            defects_para = doc.add_paragraph()
+            add_formatted_text_with_bold(defects_para, defects_text)
         
         doc.add_page_break()
     
     except Exception as e:
-        print(f"Error in enhanced defects analysis: {e}")
+        print(f"Error in defects analysis: {e}")
 
-def add_enhanced_recommendations(doc, metrics):
-    """Enhanced recommendations with better formatting and visual elements"""
+def add_data_visualization(doc, processed_data, metrics):
+    """Add data visualization section"""
     
     try:
-        header = doc.add_paragraph("STRATEGIC RECOMMENDATIONS & ACTION PLAN")
-        header.style = 'EnhancedSectionHeader'
+        header = doc.add_paragraph("COMPREHENSIVE DATA VISUALISATION")
+        header.style = 'CleanSectionHeader'
         
-        # Enhanced immediate priorities - REMOVED "Next 14 Days" per Nelson's feedback
-        priorities_header = doc.add_paragraph("IMMEDIATE PRIORITIES")
-        priorities_header.style = 'EnhancedSubsectionHeader'
+        # Decorative line - shortened as requested
+        deco_para = doc.add_paragraph()
+        deco_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        deco_run = deco_para.add_run("───────────────────────────────────────────────────────────────")  # Shortened line
+        deco_run.font.name = 'Arial'
+        deco_run.font.size = Pt(10)
+        deco_run.font.color.rgb = RGBColor(0, 0, 0)
+
+        intro_text = "This section presents visual analytics of the inspection data, highlighting key patterns and trends to support strategic decision-making and resource allocation."
+        intro_para = doc.add_paragraph(intro_text)
+        intro_para.style = 'CleanBody'
         
-        priorities = []
-        ready_pct = metrics.get('ready_pct', 0)
-        extensive_units = metrics.get('extensive_work_units', 0)
+        doc.add_paragraph()
         
-        # Enhanced completion strategy
-        if ready_pct > 75:
-            priorities.append("**Accelerated Completion Protocol**: With 75%+ units requiring only minor work, implement immediate handover for compliant units while establishing parallel remediation workflows for remaining inventory.")
-        elif ready_pct > 50:
-            priorities.append("**Phased Completion Strategy**: Establish structured completion phases prioritizing ready units first, with clear milestone-based progression for units under remediation.")
+        # Create pie chart
+        create_pie_chart(doc, metrics)
+        
+        # Create severity chart
+        create_severity_chart(doc, metrics)
+        
+        # Create trade chart
+        create_trade_chart(doc, metrics)
+        
+        doc.add_page_break()
+    
+    except Exception as e:
+        print(f"Error in data visualization: {e}")
+
+def create_pie_chart(doc, metrics):
+    """Create pie chart"""
+    
+    if not MATPLOTLIB_AVAILABLE:
+        add_text_trade_summary(doc, metrics)
+        return
+    
+    try:
+        if 'summary_trade' not in metrics or len(metrics['summary_trade']) == 0:
+            return
+        
+        breakdown_header = doc.add_paragraph("Defects Distribution by Trade Category")
+        breakdown_header.style = 'CleanSubsectionHeader'
+        
+        trade_data = metrics['summary_trade'].copy()
+        total_defects = metrics.get('total_defects', 0)
+        
+        num_trades = len(trade_data)
+        
+        if NUMPY_AVAILABLE and num_trades <= 12:
+            colors = plt.cm.Set3(np.linspace(0, 1, num_trades))
         else:
-            priorities.append("**Quality-First Approach**: Implement comprehensive remediation program before handover to ensure optimal customer satisfaction and minimize post-handover defect claims.")
+            base_colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#ff99cc', 
+                          '#c2c2f0', '#ffb3e6', '#c4e17f', '#76d7c4', '#f7dc6f']
+            colors = (base_colors * ((num_trades // len(base_colors)) + 1))[:num_trades]
         
-        # Enhanced trade-specific priorities
-        if 'summary_trade' in metrics and len(metrics['summary_trade']) > 0:
-            top_trade = metrics['summary_trade'].iloc[0]
-            top_trade_pct = (top_trade['DefectCount'] / metrics.get('total_defects', 1) * 100)
-            priorities.append(f"**{top_trade['Trade']} Focus Initiative**: This trade represents {top_trade_pct:.1f}% of all defects ({top_trade['DefectCount']} instances). Deploy dedicated supervision teams and additional resources with daily progress monitoring.")
+        fig, ax = plt.subplots(figsize=(10, 8))
         
-        # Enhanced resource allocation
-        if extensive_units > 0:
-            priorities.append(f"**Specialized Remediation Teams**: {extensive_units} units require extensive work (15+ defects each). Establish dedicated teams with enhanced supervision to maintain project timeline integrity and quality standards.")
+        wedges, texts, autotexts = ax.pie(
+            trade_data['DefectCount'], 
+            labels=trade_data['Trade'], 
+            colors=colors,
+            autopct='%1.1f%%',
+            startangle=45
+        )
         
-        # Enhanced quality control
-        priorities.append("**Enhanced Quality Protocols**: Implement multi-tier inspection checkpoints with supervisor sign-offs for critical trades before final handover, reducing post-handover callback rates.")
+        ax.set_title(f'Distribution of Defects by Trade Category ({num_trades} Trades)', 
+                    fontsize=16, fontweight='600', pad=20)
         
-        for i, priority in enumerate(priorities, 1):
-            priority_para = doc.add_paragraph(f"{i}. {priority}")
-            priority_para.style = 'EnhancedBody'
-            priority_para.paragraph_format.left_indent = Inches(0.4)
+        plt.tight_layout()
+        add_chart_to_document(doc, fig)
+        plt.close()
         
-        doc.add_paragraph()
-        
-        # Note: REMOVED "Medium-term strategies" section per Nelson's feedback
-        
-        doc.add_page_break()
+        # Summary text
+        if len(trade_data) > 0:
+            top_trade = trade_data.iloc[0]
+            summary_text = f"""The analysis reveals {top_trade['Trade']} as the primary defect category, representing {top_trade['DefectCount']} of the total {total_defects:,} defects ({top_trade['DefectCount']/total_defects*100:.1f}% of all identified issues). This complete analysis covers all {num_trades} trade categories identified during the inspection, providing comprehensive insights into defect distribution patterns."""
+            
+            summary_para = doc.add_paragraph(summary_text)
+            summary_para.style = 'CleanBody'
     
     except Exception as e:
-        print(f"Error in enhanced recommendations: {e}")
+        print(f"Error creating pie chart: {e}")
 
-def add_enhanced_footer(doc, metrics):
-    """Enhanced footer with better design and comprehensive information"""
+def create_severity_chart(doc, metrics):
+    """Create severity chart"""
+    
+    if not MATPLOTLIB_AVAILABLE:
+        add_text_severity_summary(doc, metrics)
+        return
     
     try:
-        header = doc.add_paragraph("REPORT DOCUMENTATION & APPENDICES")
-        header.style = 'EnhancedSectionHeader'
+        chart_title = doc.add_paragraph("Unit Classification by Defect Severity")
+        chart_title.style = 'CleanSubsectionHeader'
         
-        # Note: REMOVED "Industry Standards Compliance" section per Nelson's feedback
-        
-        # Enhanced data summary
-        data_summary_header = doc.add_paragraph("COMPREHENSIVE INSPECTION METRICS")
-        data_summary_header.style = 'EnhancedSubsectionHeader'
-        
-        avg_defects = metrics.get('avg_defects_per_unit', 0)
-        defect_rate = metrics.get('defect_rate', 0)
-        quality_score = max(0, 100 - defect_rate)
-        
-        data_summary_text = f"""**INSPECTION SCOPE & RESULTS**:
-• Total Residential Units Evaluated: {metrics.get('total_units', 0):,}
-• Total Building Components Assessed: {metrics.get('total_inspections', 0):,}
-• Total Defects Documented: {metrics.get('total_defects', 0):,}
-• Overall Defect Rate: {metrics.get('defect_rate', 0):.2f}%
-• Average Defects per Unit: {avg_defects:.2f}
-• Development Quality Score: {quality_score:.1f}/100
-
-**DEFECT LEVEL FRAMEWORK DISTRIBUTION**:
-• Minor Work Required: {metrics.get('ready_units', 0)} units ({metrics.get('ready_pct', 0):.1f}%)
-• Intermediate Remediation Required: {metrics.get('minor_work_units', 0)} units ({metrics.get('minor_pct', 0):.1f}%)
-• Major Remediation Required: {metrics.get('major_work_units', 0)} units ({metrics.get('major_pct', 0):.1f}%)  
-• Extensive Remediation Required: {metrics.get('extensive_work_units', 0)} units ({metrics.get('extensive_pct', 0):.1f}%)"""
-        
-        data_summary_para = doc.add_paragraph(data_summary_text)
-        data_summary_para.style = 'EnhancedBody'
-        
-        doc.add_paragraph()
-        
-        # Enhanced report details with better formatting
-        details_header = doc.add_paragraph("REPORT GENERATION & COMPANION RESOURCES")
-        details_header.style = 'EnhancedSubsectionHeader'
-        
-        details_text = f"""**REPORT METADATA**:
-• Report Generated: {datetime.now().strftime('%d %B %Y at %I:%M %p')}
-• Inspection Completion: {metrics.get('inspection_date', 'N/A')}
-• Building Development: {metrics.get('building_name', 'N/A')}
-• Property Location: {metrics.get('address', 'N/A')}
-
-**COMPANION DOCUMENTATION SUITE**:
-Complete defect inventories, unit-by-unit detailed breakdowns, interactive filterable data tables, and comprehensive photographic documentation are available in the accompanying Excel analytics workbook. This comprehensive dataset includes advanced filtering capabilities, dynamic visual dashboards, pivot table analysis tools, and direct export functionality for integration with project management systems and remediation tracking platforms.
-
-**TECHNICAL SUPPORT & FOLLOW-UP**:
-For technical inquiries, data interpretation assistance, or additional analysis requirements, please contact the inspection team. Ongoing support is available for remediation planning, progress tracking, and post-completion verification inspections."""
-        
-        details_para = doc.add_paragraph(details_text)
-        details_para.style = 'EnhancedBody'
-        
-        # Add decorative closing - REMOVED EMOJIS
-        doc.add_paragraph()
-        closing_para = doc.add_paragraph()
-        closing_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        closing_run = closing_para.add_run("END OF REPORT")
-        closing_run.font.name = 'Segoe UI'
-        closing_run.font.size = Pt(14)
-        closing_run.font.color.rgb = RGBColor(104, 142, 173)
-        closing_run.font.bold = True
+        if 'summary_unit' in metrics and len(metrics['summary_unit']) > 0:
+            fig, ax = plt.subplots(figsize=(12, 7))
+            
+            units_data = metrics['summary_unit']
+            
+            categories = []
+            counts = []
+            colors = []
+            
+            # Calculate categories
+            extensive_count = len(units_data[units_data['DefectCount'] >= 15])
+            categories.append('Extensive\n(15+ defects)')
+            counts.append(extensive_count)
+            colors.append('#ff9999')
+            
+            major_count = len(units_data[(units_data['DefectCount'] >= 8) & (units_data['DefectCount'] <= 14)])
+            categories.append('Major\n(8-14 defects)')
+            counts.append(major_count)
+            colors.append('#ffcc99')
+            
+            minor_count = len(units_data[(units_data['DefectCount'] >= 3) & (units_data['DefectCount'] <= 7)])
+            categories.append('Minor\n(3-7 defects)')
+            counts.append(minor_count)
+            colors.append('#ffff99')
+            
+            ready_count = len(units_data[units_data['DefectCount'] <= 2])
+            categories.append('Ready\n(0-2 defects)')
+            counts.append(ready_count)
+            colors.append('#99ff99')
+            
+            bars = ax.bar(categories, counts, color=colors, alpha=0.8)
+            
+            ax.set_ylabel('Number of Units', fontsize=14, fontweight='600')
+            ax.set_title('Unit Distribution by Defect Severity Level', 
+                        fontsize=16, fontweight='600', pad=20)
+            ax.grid(axis='y', alpha=0.3, linestyle=':')
+            
+            # Value labels
+            for bar, value in zip(bars, counts):
+                if value > 0:
+                    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(counts)*0.01,
+                           f'{value}', ha='center', va='bottom', 
+                           fontweight='bold', fontsize=12)
+            
+            plt.tight_layout()
+            add_chart_to_document(doc, fig)
+            plt.close()
     
     except Exception as e:
-        print(f"Error in enhanced footer: {e}")
+        print(f"Error creating severity chart: {e}")
 
-# Additional helper functions for missing components
-def add_enhanced_trade_summary(doc, processed_data, metrics):
-    """Enhanced trade summary with better visual presentation"""
+def create_trade_chart(doc, metrics):
+    """Create trade analysis chart"""
+    
+    if not MATPLOTLIB_AVAILABLE:
+        return
     
     try:
+        trade_header = doc.add_paragraph("Trade Category Performance Analysis")
+        trade_header.style = 'CleanSubsectionHeader'
+        
+        if 'summary_trade' not in metrics or len(metrics['summary_trade']) == 0:
+            return
+        
+        top_trades = metrics['summary_trade'].head(10)
+        
+        fig, ax = plt.subplots(figsize=(12, 8))
+        
+        colors = ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#ff99cc'] * 2
+        colors = colors[:len(top_trades)]
+        
+        if NUMPY_AVAILABLE:
+            y_pos = np.arange(len(top_trades))
+        else:
+            y_pos = list(range(len(top_trades)))
+        
+        bars = ax.barh(y_pos, top_trades['DefectCount'], color=colors, alpha=0.8)
+        
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(top_trades['Trade'], fontsize=12)
+        ax.set_xlabel('Number of Defects', fontsize=14, fontweight='600')
+        ax.set_title('Trade Categories Ranked by Defect Frequency', 
+                    fontsize=16, fontweight='600', pad=20)
+        
+        ax.grid(axis='x', alpha=0.3, linestyle=':')
+        
+        # Value labels
+        total_defects = metrics.get('total_defects', 1)
+        for i, (bar, value) in enumerate(zip(bars, top_trades['DefectCount'])):
+            percentage = (value / total_defects * 100) if total_defects > 0 else 0
+            ax.text(bar.get_width() + max(top_trades['DefectCount']) * 0.02, 
+                   bar.get_y() + bar.get_height()/2,
+                   f'{value} ({percentage:.1f}%)', va='center', 
+                   fontweight='600', fontsize=10)
+        
+        plt.tight_layout()
+        add_chart_to_document(doc, fig)
+        plt.close()
+    
+    except Exception as e:
+        print(f"Error creating trade chart: {e}")
+
+def add_trade_summary(doc, processed_data, metrics):
+    """Add trade summary section"""
+    
+    try:
+        
         header = doc.add_paragraph("TRADE-SPECIFIC DEFECT ANALYSIS")
-        header.style = 'EnhancedSectionHeader'
+        header.style = 'CleanSectionHeader'
         
+        # Decorative line - shortened as requested
+        deco_para = doc.add_paragraph()
+        deco_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        deco_run = deco_para.add_run("───────────────────────────────────────────────────────────────")  # Shortened line
+        deco_run.font.name = 'Arial'
+        deco_run.font.size = Pt(10)
+        deco_run.font.color.rgb = RGBColor(0, 0, 0)
+
         overview_text = """This section provides a comprehensive breakdown of identified defects organized by trade category, including complete unit inventories for targeted remediation planning and resource allocation optimization."""
         
         overview_para = doc.add_paragraph(overview_text)
-        overview_para.style = 'EnhancedBody'
-        
-        doc.add_paragraph()
-        
+        overview_para.style = 'CleanBody'
+                
         if processed_data is not None and len(processed_data) > 0:
             try:
                 component_details = generate_complete_component_details(processed_data)
-                add_enhanced_trade_tables(doc, component_details)
+                add_trade_tables(doc, component_details)
             except Exception as e:
-                print(f"Error generating enhanced trade tables: {e}")
+                print(f"Error generating trade tables: {e}")
         
         doc.add_page_break()
     
     except Exception as e:
-        print(f"Error in enhanced trade summary: {e}")
+        print(f"Error in trade summary: {e}")
 
 def generate_complete_component_details(processed_data):
     """Generate component details for trade analysis"""
@@ -1064,8 +1203,8 @@ def generate_complete_component_details(processed_data):
         print(f"Error generating component details: {e}")
         return pd.DataFrame()
 
-def add_enhanced_trade_tables(doc, component_details):
-    """Add enhanced trade tables with better formatting"""
+def add_trade_tables(doc, component_details):
+    """Add trade tables with clean formatting and shading"""
     
     try:
         if len(component_details) == 0:
@@ -1078,7 +1217,7 @@ def add_enhanced_trade_tables(doc, component_details):
                 trade_data = component_details[component_details['Trade'] == trade]
                 
                 trade_header = doc.add_paragraph(f"{trade}")
-                trade_header.style = 'EnhancedSubsectionHeader'
+                trade_header.style = 'CleanSubsectionHeader'
                 
                 table = doc.add_table(rows=1, cols=3)
                 table.style = 'Table Grid'
@@ -1087,6 +1226,7 @@ def add_enhanced_trade_tables(doc, component_details):
                 table.columns[1].width = Inches(4.0)
                 table.columns[2].width = Inches(0.8)
                 
+                # Headers with shading
                 headers = ['Component & Location', 'Affected Units', 'Count']
                 for i, header in enumerate(headers):
                     cell = table.cell(0, i)
@@ -1095,28 +1235,49 @@ def add_enhanced_trade_tables(doc, component_details):
                     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     run = para.runs[0]
                     run.font.bold = True
-                    run.font.color.rgb = RGBColor(255, 255, 255)
+                    run.font.name = 'Arial'
                     run.font.size = Pt(11)
+                    run.font.color.rgb = RGBColor(0, 0, 0)
                     
-                    set_cell_background_color(cell, "688EAD")  # Pastel blue header
+                    # Add header shading (light gray)
+                    set_cell_background_color(cell, "F0F0F0")
                 
-                for _, row in trade_data.iterrows():
+                # Add alternating row shading
+                for idx, (_, row) in enumerate(trade_data.iterrows()):
                     table_row = table.add_row()
+                    
+                    # Set alternating row colors (white and light gray)
+                    row_color = "FFFFFF" if idx % 2 == 0 else "F8F8F8"
                     
                     component_location = str(row['Component'])
                     if pd.notna(row['Room']) and str(row['Room']).strip():
                         component_location += f" ({row['Room']})"
                     
-                    table_row.cells[0].text = component_location
-                    table_row.cells[0].paragraphs[0].runs[0].font.size = Pt(10)
+                    # Component & Location cell
+                    cell1 = table_row.cells[0]
+                    cell1.text = component_location
+                    cell1.paragraphs[0].runs[0].font.name = 'Arial'
+                    cell1.paragraphs[0].runs[0].font.size = Pt(10)
+                    cell1.paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 0, 0)
+                    set_cell_background_color(cell1, row_color)
                     
-                    table_row.cells[1].text = str(row['Affected Units'])
-                    table_row.cells[1].paragraphs[0].runs[0].font.size = Pt(10)
+                    # Affected Units cell
+                    cell2 = table_row.cells[1]
+                    cell2.text = str(row['Affected Units'])
+                    cell2.paragraphs[0].runs[0].font.name = 'Arial'
+                    cell2.paragraphs[0].runs[0].font.size = Pt(10)
+                    cell2.paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 0, 0)
+                    set_cell_background_color(cell2, row_color)
                     
-                    table_row.cells[2].text = str(row['Unit Count'])
-                    table_row.cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                    table_row.cells[2].paragraphs[0].runs[0].font.size = Pt(10)
-                    table_row.cells[2].paragraphs[0].runs[0].font.bold = True
+                    # Count cell
+                    cell3 = table_row.cells[2]
+                    cell3.text = str(row['Unit Count'])
+                    cell3.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    cell3.paragraphs[0].runs[0].font.name = 'Arial'
+                    cell3.paragraphs[0].runs[0].font.size = Pt(10)
+                    cell3.paragraphs[0].runs[0].font.bold = True
+                    cell3.paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 0, 0)
+                    set_cell_background_color(cell3, row_color)
                 
                 doc.add_paragraph()
             
@@ -1125,42 +1286,58 @@ def add_enhanced_trade_tables(doc, component_details):
                 continue
     
     except Exception as e:
-        print(f"Error in enhanced trade tables: {e}")
+        print(f"Error in trade tables: {e}")
 
-# CORRECTED SECTION for word_report_generator.py
-# This fixes the syntax error around line 1193
-
-def add_enhanced_component_breakdown(doc, processed_data, metrics): 
-    """Enhanced component breakdown analysis"""
+def add_component_breakdown(doc, processed_data, metrics):
+    """Add component breakdown analysis - FIXED VERSION"""
     
     try:
         header = doc.add_paragraph("COMPONENT-LEVEL ANALYSIS")
-        header.style = 'EnhancedSectionHeader'
+        header.style = 'CleanSectionHeader'
         
+        # Decorative line
+        deco_para = doc.add_paragraph()
+        deco_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        deco_run = deco_para.add_run("─────────────────────────────────────────────────────────────────")
+        deco_run.font.name = 'Arial'
+        deco_run.font.size = Pt(10)
+        deco_run.font.color.rgb = RGBColor(0, 0, 0)
+ 
         intro_text = "This analysis identifies the most frequently affected individual components across all units, enabling targeted quality control improvements and preventive measures for future construction phases."
         
         intro_para = doc.add_paragraph(intro_text)
-        intro_para.style = 'EnhancedBody'
+        intro_para.style = 'CleanBody'
         
         doc.add_paragraph()
         
-        # Generate and display component analysis
         if processed_data is not None and len(processed_data) > 0:
-            component_data = generate_complete_component_details(processed_data)
+            # FIXED: Generate component breakdown properly
+            component_data = generate_fixed_component_breakdown(processed_data)
             
             if len(component_data) > 0:
+                # FIXED: Proper aggregation by Component + Trade combination
                 component_aggregated = component_data.groupby(['Component', 'Trade']).agg({
-                    'Unit Count': 'sum',
-                    'Affected Units': lambda x: ', '.join(x.astype(str).unique()) if len(x) > 1 else x.iloc[0]
+                    'Unit_Count': 'sum',  # Sum the unit counts for each component
+                    'Affected_Units': lambda x: list(set([unit for units_str in x for unit in units_str.split(', ') if units_str.strip()]))  # Combine all unique units
                 }).reset_index()
                 
-                top_components = component_aggregated.nlargest(15, 'Unit Count')
+                # Convert the list back to comma-separated string and count unique units
+                component_aggregated['Total_Unique_Units'] = component_aggregated['Affected_Units'].apply(len)
+                component_aggregated['Sample_Units_Display'] = component_aggregated['Affected_Units'].apply(
+                    lambda units_list: ', '.join(sorted(units_list[:5]) + ([f'(+{len(units_list)-5} more)'] if len(units_list) > 5 else []))
+                )
                 
-                if len(top_components[top_components['Unit Count'] > 1]) >= 10:
-                    top_components = top_components[top_components['Unit Count'] > 1].head(10)
+                # Sort by total unique units affected (descending)
+                top_components = component_aggregated.nlargest(15, 'Total_Unique_Units')
+                
+                # Filter to show only components affecting multiple units (if we have enough data)
+                if len(top_components[top_components['Total_Unique_Units'] > 1]) >= 10:
+                    top_components = top_components[top_components['Total_Unique_Units'] > 1].head(10)
+                else:
+                    top_components = top_components.head(10)
                 
                 most_freq_header = doc.add_paragraph("Most Frequently Affected Components")
-                most_freq_header.style = 'EnhancedSubsectionHeader'
+                most_freq_header.style = 'CleanSubsectionHeader'
                 
                 if len(top_components) > 0:
                     comp_table = doc.add_table(rows=1, cols=5)
@@ -1172,6 +1349,7 @@ def add_enhanced_component_breakdown(doc, processed_data, metrics):
                     comp_table.columns[3].width = Inches(0.8)
                     comp_table.columns[4].width = Inches(1.0)
                     
+                    # Headers with bold formatting
                     headers = ['Component', 'Trade', 'Sample Affected Units', 'Total Count', 'Percentage']
                     for i, header in enumerate(headers):
                         cell = comp_table.cell(0, i)
@@ -1180,53 +1358,70 @@ def add_enhanced_component_breakdown(doc, processed_data, metrics):
                         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                         run = para.runs[0]
                         run.font.bold = True
-                        run.font.color.rgb = RGBColor(255, 255, 255)
+                        run.font.name = 'Arial'
                         run.font.size = Pt(11)
+                        run.font.color.rgb = RGBColor(0, 0, 0)
                         
-                        set_cell_background_color(cell, "688EAD")
+                        # Add header shading
+                        set_cell_background_color(cell, "F0F0F0")
                     
                     total_units = metrics.get('total_units', 1)
-                    for _, comp_row in top_components.iterrows():
+                    for idx, (_, comp_row) in enumerate(top_components.iterrows()):
                         row = comp_table.add_row()
                         
+                        # Alternating row colors
+                        row_color = "FFFFFF" if idx % 2 == 0 else "F8F8F8"
+                        
                         # Component
-                        row.cells[0].text = str(comp_row.get('Component', 'N/A'))
-                        row.cells[0].paragraphs[0].runs[0].font.size = Pt(10)
+                        cell1 = row.cells[0]
+                        cell1.text = str(comp_row.get('Component', 'N/A'))
+                        cell1.paragraphs[0].runs[0].font.name = 'Arial'
+                        cell1.paragraphs[0].runs[0].font.size = Pt(10)
+                        cell1.paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 0, 0)
+                        set_cell_background_color(cell1, row_color)
                         
                         # Trade
-                        row.cells[1].text = str(comp_row.get('Trade', 'N/A'))
-                        row.cells[1].paragraphs[0].runs[0].font.size = Pt(10)
+                        cell2 = row.cells[1]
+                        cell2.text = str(comp_row.get('Trade', 'N/A'))
+                        cell2.paragraphs[0].runs[0].font.name = 'Arial'
+                        cell2.paragraphs[0].runs[0].font.size = Pt(10)
+                        cell2.paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 0, 0)
+                        set_cell_background_color(cell2, row_color)
                         
                         # Sample affected units
-                        affected_units = str(comp_row.get('Affected Units', ''))
-                        if len(affected_units) > 30:
-                            units_list = affected_units.split(', ')
-                            sample_units = ', '.join(units_list[:5])
-                            if len(units_list) > 5:
-                                sample_units += f" (+ {len(units_list)-5} more)"
-                            row.cells[2].text = sample_units
-                        else:
-                            row.cells[2].text = affected_units
-                        row.cells[2].paragraphs[0].runs[0].font.size = Pt(9)
+                        cell3 = row.cells[2]
+                        cell3.text = str(comp_row.get('Sample_Units_Display', ''))
+                        cell3.paragraphs[0].runs[0].font.name = 'Arial'
+                        cell3.paragraphs[0].runs[0].font.size = Pt(9)
+                        cell3.paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 0, 0)
+                        set_cell_background_color(cell3, row_color)
                         
-                        # Count
-                        unit_count = comp_row.get('Unit Count', 0)
-                        row.cells[3].text = str(unit_count)
-                        row.cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        row.cells[3].paragraphs[0].runs[0].font.size = Pt(10)
-                        row.cells[3].paragraphs[0].runs[0].font.bold = True
+                        # FIXED: Use Total_Unique_Units instead of Unit_Count
+                        cell4 = row.cells[3]
+                        unit_count = comp_row.get('Total_Unique_Units', 0)
+                        cell4.text = str(unit_count)
+                        cell4.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        cell4.paragraphs[0].runs[0].font.name = 'Arial'
+                        cell4.paragraphs[0].runs[0].font.size = Pt(10)
+                        cell4.paragraphs[0].runs[0].font.bold = True
+                        cell4.paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 0, 0)
+                        set_cell_background_color(cell4, row_color)
                         
-                        # Percentage
+                        # FIXED: Calculate percentage correctly using unique units
+                        cell5 = row.cells[4]
                         percentage = (unit_count / total_units * 100) if total_units > 0 else 0
-                        row.cells[4].text = f"{percentage:.1f}%"
-                        row.cells[4].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        row.cells[4].paragraphs[0].runs[0].font.size = Pt(10)
-                        row.cells[4].paragraphs[0].runs[0].font.bold = True
+                        cell5.text = f"{percentage:.1f}%"
+                        cell5.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                        cell5.paragraphs[0].runs[0].font.name = 'Arial'
+                        cell5.paragraphs[0].runs[0].font.size = Pt(10)
+                        cell5.paragraphs[0].runs[0].font.bold = True
+                        cell5.paragraphs[0].runs[0].font.color.rgb = RGBColor(0, 0, 0)
+                        set_cell_background_color(cell5, row_color)
                     
-                    # Enhanced analysis text
+                    # Analysis text with proper bold formatting
                     if len(top_components) > 0:
                         top_component = top_components.iloc[0]
-                        unit_count = top_component.get('Unit Count', 0)
+                        unit_count = top_component.get('Total_Unique_Units', 0)
                         component_name = top_component.get('Component', 'Unknown')
                         trade_name = top_component.get('Trade', 'Unknown')
                         
@@ -1235,32 +1430,288 @@ def add_enhanced_component_breakdown(doc, processed_data, metrics):
                         analysis_text = f"""**Component Analysis Insights**: "{component_name}" emerges as the most frequently affected component, impacting {unit_count} units ({unit_count/total_units*100:.1f}% of all inspected units). This pattern reveals a systematic issue requiring immediate attention within the {trade_name} trade category.
 
 **Key Findings from Component Analysis**:
-• The top 5 most problematic components collectively affect {top_components.head(5)['Unit Count'].sum()} units across the development
+• The top 5 most problematic components collectively affect {top_components.head(5)['Total_Unique_Units'].sum()} units across the development
 • {trade_name} trade demonstrates the highest frequency of component-specific defects
 • Recurring component failures across multiple units indicate potential systematic installation or quality control issues
-• Component-level patterns suggest opportunities for targeted supplier quality improvements
-
-**Strategic Recommendations**: The concentration of defects in specific components presents clear opportunities for focused interventions, enhanced installation procedures, and strengthened quality control protocols during the construction process. Addressing these top components systematically could resolve a significant portion of overall defects."""
+• Component-level patterns suggest opportunities for targeted supplier quality improvements"""
                         
-                        analysis_para = doc.add_paragraph(analysis_text)
-                        analysis_para.style = 'EnhancedBody'
-                else:
-                    no_pattern_text = "The component-level analysis reveals distributed defects across various components without significant concentration patterns, indicating isolated issues rather than systematic component problems."
-                    
-                    no_pattern_para = doc.add_paragraph(no_pattern_text)
-                    no_pattern_para.style = 'EnhancedBody'
-        else:
-            no_data_para = doc.add_paragraph("Component-level breakdown data is not available for detailed analysis in this report.")
-            no_data_para.style = 'EnhancedBody'
+                        analysis_para = doc.add_paragraph()
+                        add_formatted_text_with_bold(analysis_para, analysis_text)
         
         doc.add_page_break()
     
     except Exception as e:
-        print(f"Error in enhanced component breakdown: {e}")
+        print(f"Error in component breakdown: {e}")
 
-# Backward compatibility and additional functions
+
+def generate_fixed_component_breakdown(processed_data):
+    """FIXED: Generate component details that match Excel report logic"""
+    
+    try:
+        required_columns = ['StatusClass', 'Trade', 'Room', 'Component', 'Unit']
+        missing_columns = [col for col in required_columns if col not in processed_data.columns]
+        
+        if missing_columns:
+            print(f"Missing columns: {missing_columns}")
+            return pd.DataFrame()
+        
+        # Filter for defects only
+        defects_only = processed_data[processed_data['StatusClass'] == 'Not OK']
+        
+        if len(defects_only) == 0:
+            return pd.DataFrame()
+        
+        # FIXED: Group by Component, Trade, Room combination (matching Excel logic)
+        component_summary = defects_only.groupby(['Component', 'Trade', 'Room']).agg({
+            'Unit': lambda x: ', '.join(sorted(x.astype(str).unique()))  # Get unique units as comma-separated string
+        }).reset_index()
+        
+        # Count unique units per component/trade/room combination
+        unit_counts = defects_only.groupby(['Component', 'Trade', 'Room'])['Unit'].nunique().reset_index()
+        
+        # Merge the data
+        component_summary = component_summary.merge(unit_counts, on=['Component', 'Trade', 'Room'])
+        component_summary.columns = ['Component', 'Trade', 'Room', 'Affected_Units', 'Unit_Count']
+        
+        # Sort by unit count (descending), then by component name
+        component_summary = component_summary.sort_values(['Unit_Count', 'Component'], ascending=[False, True])
+        
+        print(f"Generated component breakdown with {len(component_summary)} entries")
+        return component_summary
+    
+    except Exception as e:
+        print(f"Error generating fixed component details: {e}")
+        return pd.DataFrame()
+
+def add_recommendations(doc, metrics):
+    """Add recommendations section"""
+    
+    try:
+        header = doc.add_paragraph("STRATEGIC RECOMMENDATIONS & ACTION PLAN")
+        header.style = 'CleanSectionHeader'
+        
+        # Decorative line - shortened as requested
+        deco_para = doc.add_paragraph()
+        deco_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        deco_run = deco_para.add_run("───────────────────────────────────────────────────────────────")  # Shortened line
+        deco_run.font.name = 'Arial'
+        deco_run.font.size = Pt(10)
+        deco_run.font.color.rgb = RGBColor(0, 0, 0)
+                
+        # Immediate priorities
+        priorities_header = doc.add_paragraph("IMMEDIATE PRIORITIES")
+        priorities_header.style = 'CleanSubsectionHeader'
+        
+        priorities = []
+        ready_pct = metrics.get('ready_pct', 0)
+        extensive_units = metrics.get('extensive_work_units', 0)
+        
+        if ready_pct > 75:
+            priorities.append("**Accelerated Completion Protocol**: With 75%+ units requiring only minor work, implement immediate handover for compliant units while establishing parallel remediation workflows for remaining inventory.")
+        elif ready_pct > 50:
+            priorities.append("**Phased Completion Strategy**: Establish structured completion phases prioritizing ready units first, with clear milestone-based progression for units under remediation.")
+        else:
+            priorities.append("**Quality-First Approach**: Implement comprehensive remediation program before handover to ensure optimal customer satisfaction and minimize post-handover defect claims.")
+        
+        if 'summary_trade' in metrics and len(metrics['summary_trade']) > 0:
+            top_trade = metrics['summary_trade'].iloc[0]
+            top_trade_pct = (top_trade['DefectCount'] / metrics.get('total_defects', 1) * 100)
+            priorities.append(f"**{top_trade['Trade']} Focus Initiative**: This trade represents {top_trade_pct:.1f}% of all defects ({top_trade['DefectCount']} instances). Deploy dedicated supervision teams and additional resources with daily progress monitoring.")
+        
+        if extensive_units > 0:
+            priorities.append(f"**Specialized Remediation Teams**: {extensive_units} units require extensive work (15+ defects each). Establish dedicated teams with enhanced supervision to maintain project timeline integrity and quality standards.")
+        
+        priorities.append("**Enhanced Quality Protocols**: Implement multi-tier inspection checkpoints with supervisor sign-offs for critical trades before final handover, reducing post-handover callback rates.")
+        
+        for i, priority in enumerate(priorities, 1):
+            priority_para = doc.add_paragraph()
+            add_formatted_text_with_bold(priority_para, f"{i}. {priority}")
+            priority_para.paragraph_format.left_indent = Inches(0.4)
+        
+        doc.add_paragraph()
+        doc.add_page_break()
+    
+    except Exception as e:
+        print(f"Error in recommendations: {e}")
+
+def add_footer(doc, metrics):
+    """Add footer section"""
+    
+    try:
+        header = doc.add_paragraph("REPORT DOCUMENTATION & APPENDICES")
+        header.style = 'CleanSectionHeader'
+        
+        # Decorative line - shortened as requested
+        deco_para = doc.add_paragraph()
+        deco_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        deco_run = deco_para.add_run("───────────────────────────────────────────────────────────────")  # Shortened line
+        deco_run.font.name = 'Arial'
+        deco_run.font.size = Pt(10)
+        deco_run.font.color.rgb = RGBColor(0, 0, 0)
+
+        # Comprehensive inspection metrics
+        data_summary_header = doc.add_paragraph("COMPREHENSIVE INSPECTION METRICS")
+        data_summary_header.style = 'CleanSubsectionHeader'
+        
+        avg_defects = metrics.get('avg_defects_per_unit', 0)
+        defect_rate = metrics.get('defect_rate', 0)
+        quality_score = max(0, 100 - defect_rate)
+        
+        data_summary_text = f"""**INSPECTION SCOPE & RESULTS**:
+• Total Residential Units Evaluated: {metrics.get('total_units', 0):,}
+• Total Building Components Assessed: {metrics.get('total_inspections', 0):,}
+• Total Defects Documented: {metrics.get('total_defects', 0):,}
+• Overall Defect Rate: {metrics.get('defect_rate', 0):.2f}%
+• Average Defects per Unit: {avg_defects:.2f}
+• Development Quality Score: {quality_score:.1f}/100
+
+**DEFECT LEVEL FRAMEWORK DISTRIBUTION**:
+• Minor Work Required: {metrics.get('ready_units', 0)} units ({metrics.get('ready_pct', 0):.1f}%)
+• Intermediate Remediation Required: {metrics.get('minor_work_units', 0)} units ({metrics.get('minor_pct', 0):.1f}%)
+• Major Remediation Required: {metrics.get('major_work_units', 0)} units ({metrics.get('major_pct', 0):.1f}%)  
+• Extensive Remediation Required: {metrics.get('extensive_work_units', 0)} units ({metrics.get('extensive_pct', 0):.1f}%)"""
+        
+        data_summary_para = doc.add_paragraph()
+        add_formatted_text_with_bold(data_summary_para, data_summary_text)
+        
+        doc.add_paragraph()
+        
+        # Report generation details
+        details_header = doc.add_paragraph("REPORT GENERATION & COMPANION RESOURCES")
+        details_header.style = 'CleanSubsectionHeader'
+        
+        details_text = f"""**REPORT METADATA**:
+• Report Generated: {datetime.now().strftime('%d %B %Y at %I:%M %p')}
+• Inspection Completion: {metrics.get('inspection_date', 'N/A')}
+• Building Development: {metrics.get('building_name', 'N/A')}
+• Property Location: {metrics.get('address', 'N/A')}
+
+**COMPANION DOCUMENTATION SUITE**:
+Complete defect inventories, unit-by-unit detailed breakdowns, interactive filterable data tables, and comprehensive photographic documentation are available in the accompanying Excel analytics workbook. This comprehensive dataset includes advanced filtering capabilities, dynamic visual dashboards, pivot table analysis tools, and direct export functionality for integration with project management systems and remediation tracking platforms.
+
+**TECHNICAL SUPPORT & FOLLOW-UP**:
+For technical inquiries, data interpretation assistance, or additional analysis requirements, please contact the inspection team. Ongoing support is available for remediation planning, progress tracking, and post-completion verification inspections."""
+        
+        details_para = doc.add_paragraph()
+        add_formatted_text_with_bold(details_para, details_text)
+        
+        # Closing
+        doc.add_paragraph()
+        closing_para = doc.add_paragraph()
+        closing_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        closing_run = closing_para.add_run("END OF REPORT")
+        closing_run.font.name = 'Arial'
+        closing_run.font.size = Pt(14)
+        closing_run.font.color.rgb = RGBColor(0, 0, 0)
+        closing_run.font.bold = True
+    
+    except Exception as e:
+        print(f"Error in footer: {e}")
+
+def add_chart_to_document(doc, fig):
+    """Helper function to add charts to document"""
+    
+    try:
+        chart_buffer = BytesIO()
+        fig.savefig(chart_buffer, format='png', dpi=300, bbox_inches='tight', 
+                    facecolor='white', edgecolor='none', pad_inches=0.2)
+        chart_buffer.seek(0)
+        
+        chart_para = doc.add_paragraph()
+        chart_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        chart_run = chart_para.add_run()
+        chart_run.add_picture(chart_buffer, width=Inches(7))
+        
+        doc.add_paragraph()
+    
+    except Exception as e:
+        print(f"Error adding chart: {e}")
+
+def add_text_trade_summary(doc, metrics):
+    """Text-based trade summary when matplotlib is not available"""
+    try:
+        breakdown_header = doc.add_paragraph("Defects Distribution by Trade Category")
+        breakdown_header.style = 'CleanSubsectionHeader'
+        
+        note_para = doc.add_paragraph("(Visual charts require matplotlib - showing text summary)")
+        note_para.style = 'CleanBody'
+        
+        if 'summary_trade' not in metrics or len(metrics['summary_trade']) == 0:
+            return
+        
+        trade_data = metrics['summary_trade'].copy()
+        total_defects = metrics.get('total_defects', 0)
+        
+        if total_defects > 0:
+            for idx, (_, row) in enumerate(trade_data.iterrows(), 1):
+                percentage = (row['DefectCount'] / total_defects * 100)
+                trade_text = f"{idx}. {row['Trade']}: {row['DefectCount']} defects ({percentage:.1f}%)"
+                trade_para = doc.add_paragraph(trade_text)
+                trade_para.style = 'CleanBody'
+                trade_para.paragraph_format.left_indent = Inches(0.3)
+        
+    except Exception as e:
+        print(f"Error in text trade summary: {e}")
+
+def add_text_severity_summary(doc, metrics):
+    """Text-based severity summary when matplotlib is not available"""
+    try:
+        chart_title = doc.add_paragraph("Unit Classification by Defect Severity")
+        chart_title.style = 'CleanSubsectionHeader'
+        
+        note_para = doc.add_paragraph("(Visual charts require matplotlib - showing text summary)")
+        note_para.style = 'CleanBody'
+        
+        if 'summary_unit' in metrics and len(metrics['summary_unit']) > 0:
+            units_data = metrics['summary_unit']
+            
+            extensive_count = len(units_data[units_data['DefectCount'] >= 15])
+            major_count = len(units_data[(units_data['DefectCount'] >= 8) & (units_data['DefectCount'] <= 14)])
+            minor_count = len(units_data[(units_data['DefectCount'] >= 3) & (units_data['DefectCount'] <= 7)])
+            ready_count = len(units_data[units_data['DefectCount'] <= 2])
+            
+            severity_data = [
+                ("Extensive (15+ defects)", extensive_count),
+                ("Major (8-14 defects)", major_count),
+                ("Minor (3-7 defects)", minor_count),
+                ("Ready (0-2 defects)", ready_count)
+            ]
+            
+            for category, count in severity_data:
+                if count > 0:
+                    severity_text = f"• {category}: {count} units"
+                    severity_para = doc.add_paragraph(severity_text)
+                    severity_para.style = 'CleanBody'
+                    severity_para.paragraph_format.left_indent = Inches(0.3)
+        
+    except Exception as e:
+        print(f"Error in text severity summary: {e}")
+
+def add_text_units_summary(doc, metrics):
+    """Text-based units summary when matplotlib is not available"""
+    try:
+        chart_title = doc.add_paragraph("Top 20 Units Requiring Immediate Intervention")
+        chart_title.style = 'CleanSubsectionHeader'
+        
+        note_para = doc.add_paragraph("(Visual charts require matplotlib - showing text summary)")
+        note_para.style = 'CleanBody'
+        
+        if 'summary_unit' not in metrics or len(metrics['summary_unit']) == 0:
+            return
+        
+        top_units = metrics['summary_unit'].head(20)
+        
+        for idx, (_, row) in enumerate(top_units.iterrows(), 1):
+            unit_text = f"{idx}. Unit {row['Unit']}: {row['DefectCount']} defects"
+            unit_para = doc.add_paragraph(unit_text)
+            unit_para.style = 'CleanBody'
+            unit_para.paragraph_format.left_indent = Inches(0.3)
+        
+    except Exception as e:
+        print(f"Error in text units summary: {e}")
+
 def create_error_document(error, metrics):
-    """Create enhanced error document"""
+    """Create error document"""
     
     doc = Document()
     title = doc.add_heading("Inspection Report - Generation Error", level=1)
@@ -1278,7 +1729,7 @@ Total Defects: {metrics.get('total_defects', 'N/A')}
 
 # Backward compatibility functions
 def generate_professional_word_report(processed_data, metrics, images=None):
-    """Backward compatibility wrapper for the enhanced report generator"""
+    """Backward compatibility wrapper"""
     return generate_enhanced_word_report(processed_data, metrics, images)
 
 def generate_word_report(processed_data, metrics, images=None):
@@ -1291,21 +1742,43 @@ def create_inspection_report(processed_data, metrics, images=None):
 
 # Main execution and testing
 if __name__ == "__main__":
-    print("Enhanced Word Report Generator with Professional Formatting loaded successfully!")
-    print("\nKEY UPDATES APPLIED:")
-    print("• ✅ Removed all emojis for professional client presentation")
-    print("• ✅ Updated terminology:")
-    print("  - 'Settlement Readiness' → 'Defect Level Framework'")
-    print("  - 'Ready for Settlement' → 'Minor Work Required'")
-    print("  - 'Minor Work Required' → 'Intermediate Work Required'")
-    print("• ✅ Fixed quality score calculation (uses defect rate, not avg defects)")
-    print("• ✅ Removed 'Next 14 Days' from immediate priorities")
-    print("• ✅ Removed medium-term strategies section")
-    print("• ✅ Removed industry standards compliance section")
-    print("• ✅ Professional formatting maintained")
-    print("• ✅ Pastel color schemes preserved")
-    print("• ✅ Enhanced typography and visual hierarchy")
-    print("• ✅ Backward compatibility maintained")
+    print("Enhanced Word Report Generator with Blank Page Removal loaded successfully!")
+    print("\nNEW FEATURES ADDED:")
+    print("• remove_blank_pages() - Identifies and removes blank pages/elements")
+    print("• cleanup_excessive_spacing() - Removes excessive empty paragraphs")
+    print("• optimize_page_breaks() - Optimizes page break placement")
+    print("• validate_document_structure() - Provides document structure analysis")
+    print("• Post-processing pipeline with detailed logging")
     
-    print("\nREADY FOR CLIENT PRESENTATION!")
-    print("The Word reports will now have a professional appearance suitable for client delivery.")
+    print("\nEXISTING FEATURES:")
+    print("• Chart legends display properly with severity levels")
+    print("• Bold text formatting (**text**) converted to actual bold")
+    print("• Top margin set to 3cm")
+    print("• Title split into 2 lines: PRE-SETTLEMENT / INSPECTION REPORT")
+    print("• Shortened decorative lines")
+    print("• Table shading with alternating rows and header colors")
+    print("• Company logo positioned in document header (left side)")
+    print("• Cover image sized appropriately (4.7 inches)")
+    print("• All text uses Arial font with black color")
+    
+    print("\nDEPENDENCY STATUS:")
+    print(f"  python-docx: Available")
+    print(f"  matplotlib: {'Available' if MATPLOTLIB_AVAILABLE else 'Not Available'}")
+    print(f"  seaborn: {'Available' if SEABORN_AVAILABLE else 'Not Available'}")  
+    print(f"  numpy: {'Available' if NUMPY_AVAILABLE else 'Not Available'}")
+    
+    if not MATPLOTLIB_AVAILABLE:
+        print("\nINFO: matplotlib not available - charts will be replaced with text summaries")
+        print("For full visual charts, install with: pip install matplotlib seaborn")
+    else:
+        print("\nREADY: All dependencies available for full visual reports with legends!")
+    
+    print("\nPOST-PROCESSING WORKFLOW:")
+    print("1. Document generation with all sections")
+    print("2. Initial structure validation")
+    print("3. Blank page detection and removal")
+    print("4. Page break optimization")
+    print("5. Excessive spacing cleanup")
+    print("6. Final structure validation and reporting")
+    
+    print("\nREADY FOR PRODUCTION WITH BLANK PAGE REMOVAL!")

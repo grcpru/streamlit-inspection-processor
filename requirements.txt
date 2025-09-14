@@ -1,10 +1,37 @@
-streamlit
-pandas
-xlsxwriter
-python-docx==0.8.11
-matplotlib==3.7.2
-seaborn==0.12.2
-Pillow>=10.0.0
+# Core Dependencies (Required)
+streamlit>=1.28.0
+pandas>=2.0.0
+sqlite3  # Built-in with Python
+
+# Report Generation (Required)
+xlsxwriter>=3.0.0
+python-docx>=0.8.11
 pytz>=2023.3
-python-dotenv>=1.0.0
+
+# Data Visualization (Optional - for enhanced Word reports)
+matplotlib>=3.7.0
+seaborn>=0.12.0
+numpy>=1.24.0
+
+# Additional Excel Support (Optional)
 openpyxl>=3.1.0
+
+# Development and Testing (Optional)
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Performance and Utilities (Optional)
+psutil>=5.9.0  # For system monitoring
+pillow>=10.0.0  # For image processing in reports
+
+# Web scraping (if needed for data sources)
+requests>=2.31.0
+
+# Date/Time utilities
+python-dateutil>=2.8.0
+
+# File handling improvements
+pathlib2>=2.3.7; python_version<"3.4"
+
+# CSV processing enhancements
+chardet>=5.2.0  # For encoding detection
