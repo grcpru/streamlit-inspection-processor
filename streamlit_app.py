@@ -651,6 +651,54 @@ class DatabaseAuthManager:
             
         except Exception as e:
             return False, f"Database error: {str(e)}"
+
+# Add this debug section somewhere visible in your app (after login)
+st.write("=== DEBUGGING REPORT GENERATORS ===")
+
+# Test the actual import variables
+st.write(f"EXCEL_REPORT_AVAILABLE: {globals().get('EXCEL_REPORT_AVAILABLE', 'Variable not found')}")
+st.write(f"WORD_REPORT_AVAILABLE: {globals().get('WORD_REPORT_AVAILABLE', 'Variable not found')}")
+
+# Test imports step by step
+st.write("Testing imports step by step:")
+
+try:
+    import excel_report_generator
+    st.success("✓ excel_report_generator module imported")
+    
+    try:
+        from excel_report_generator import generate_professional_excel_report, generate_filename
+        st.success("✓ Excel functions imported")
+    except Exception as e:
+        st.error(f"✗ Excel functions failed: {e}")
+        
+except Exception as e:
+    st.error(f"✗ excel_report_generator module failed: {e}")
+
+try:
+    import docx
+    st.success("✓ python-docx imported")
+except Exception as e:
+    st.error(f"✗ python-docx failed: {e}")
+
+try:
+    import word_report_generator
+    st.success("✓ word_report_generator module imported")
+    
+    try:
+        from word_report_generator import generate_professional_word_report
+        st.success("✓ Word functions imported")
+    except Exception as e:
+        st.error(f"✗ Word functions failed: {e}")
+        
+except Exception as e:
+    st.error(f"✗ word_report_generator module failed: {e}")
+
+# Check if generator files exist
+import os
+st.write("Checking files exist:")
+st.write(f"excel_report_generator.py exists: {os.path.exists('excel_report_generator.py')}")
+st.write(f"word_report_generator.py exists: {os.path.exists('word_report_generator.py')}")
     
 def show_builder_interface():
     """Enhanced builder interface with photo upload and defect completion"""
