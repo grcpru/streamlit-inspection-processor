@@ -30,6 +30,18 @@ from data_persistence import (
 )
 
 # Add these missing functions to your streamlit_app.py
+def ensure_database_exists():
+    """Ensure database exists with all required tables"""
+    try:
+        from complete_database_setup import create_complete_database_v2
+        create_complete_database_v2()
+        return True
+    except Exception as e:
+        print(f"Database setup failed: {e}")
+        return False
+
+# Call this when the app starts
+ensure_database_exists()
 
 def setup_enhanced_defects_if_needed(cursor):
     """Auto-setup enhanced defects table if empty"""
@@ -3444,11 +3456,19 @@ def check_database_migration():
     except ImportError:
         st.sidebar.error("Migration script not found. Please create database_migration_script.py")
 
-# Add this near the beginning of your main app, after imports but before the main interface
+# Import the database setup function
+from complete_database_setup import create_complete_database_v2
+
 if __name__ == "__main__":
+    # Initialize database on startup
+    try:
+        create_complete_database_v2()
+        print("Database initialized successfully")
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+    
     # Check migration status early
     # check_database_migration()
-    pass
 
 def process_inspection_data(df, mapping, building_info):
     """Process the inspection data with enhanced metrics calculation including urgent defects"""
