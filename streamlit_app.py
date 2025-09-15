@@ -29,6 +29,16 @@ from data_persistence import (
     load_trade_mapping_from_database
 )
 
+# Add this right after your imports, before any other code
+st.write("DEBUG: Import Status Check")
+st.write(f"EXCEL_REPORT_AVAILABLE exists: {'EXCEL_REPORT_AVAILABLE' in globals()}")
+st.write(f"WORD_REPORT_AVAILABLE exists: {'WORD_REPORT_AVAILABLE' in globals()}")
+
+if 'EXCEL_REPORT_AVAILABLE' in globals():
+    st.write(f"EXCEL_REPORT_AVAILABLE value: {EXCEL_REPORT_AVAILABLE}")
+if 'WORD_REPORT_AVAILABLE' in globals():
+    st.write(f"WORD_REPORT_AVAILABLE value: {WORD_REPORT_AVAILABLE}")
+    
 def ensure_database_exists():
     """Ensure database exists with all required tables"""
     try:
