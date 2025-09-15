@@ -1,4 +1,5 @@
 # Core
+--force-reinstall
 streamlit==1.36.0
 pandas==2.2.2
 numpy==1.26.4
