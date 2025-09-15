@@ -3447,7 +3447,7 @@ def check_database_migration():
 # Add this near the beginning of your main app, after imports but before the main interface
 if __name__ == "__main__":
     # Check migration status early
-    check_database_migration()
+    # check_database_migration()
 
 def process_inspection_data(df, mapping, building_info):
     """Process the inspection data with enhanced metrics calculation including urgent defects"""
