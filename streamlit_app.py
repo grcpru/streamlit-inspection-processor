@@ -3448,6 +3448,7 @@ def check_database_migration():
 if __name__ == "__main__":
     # Check migration status early
     # check_database_migration()
+    pass
 
 def process_inspection_data(df, mapping, building_info):
     """Process the inspection data with enhanced metrics calculation including urgent defects"""
