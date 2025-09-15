@@ -6,7 +6,7 @@ numpy==1.26.4
 # Reports
 openpyxl==3.1.5
 xlsxwriter==3.2.0
-python-docx==0.8.11
+python-docx==1.1.2
 pytz==2024.1
 python-dateutil==2.9.0.post0
 pillow==10.4.0
