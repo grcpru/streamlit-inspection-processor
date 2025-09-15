@@ -16,6 +16,22 @@ import uuid
 from PIL import Image
 import io
 
+EXCEL_REPORT_AVAILABLE = False
+WORD_REPORT_AVAILABLE = False
+
+try:
+    from excel_report_generator import generate_professional_excel_report, generate_filename
+    EXCEL_REPORT_AVAILABLE = True
+except Exception as e:
+    EXCEL_IMPORT_ERROR = str(e)
+
+try:
+    from docx import Document
+    from word_report_generator import generate_professional_word_report
+    WORD_REPORT_AVAILABLE = True
+except Exception as e:
+    WORD_IMPORT_ERROR = str(e)
+    
 from enhanced_defect_system import (
     show_enhanced_property_developer_dashboard,
     show_enhanced_builder_dashboard, 
@@ -28,17 +44,7 @@ from data_persistence import (
     save_trade_mapping_to_database, 
     load_trade_mapping_from_database
 )
-
-# Add this right after your imports, before any other code
-st.write("DEBUG: Import Status Check")
-st.write(f"EXCEL_REPORT_AVAILABLE exists: {'EXCEL_REPORT_AVAILABLE' in globals()}")
-st.write(f"WORD_REPORT_AVAILABLE exists: {'WORD_REPORT_AVAILABLE' in globals()}")
-
-if 'EXCEL_REPORT_AVAILABLE' in globals():
-    st.write(f"EXCEL_REPORT_AVAILABLE value: {EXCEL_REPORT_AVAILABLE}")
-if 'WORD_REPORT_AVAILABLE' in globals():
-    st.write(f"WORD_REPORT_AVAILABLE value: {WORD_REPORT_AVAILABLE}")
-    
+   
 def ensure_database_exists():
     """Ensure database exists with all required tables"""
     try:
@@ -420,29 +426,6 @@ except ImportError as e:
     PORTFOLIO_ANALYTICS_AVAILABLE = False
     PORTFOLIO_ANALYTICS_ERROR = str(e)
     
-# Report generator imports with better error handling
-EXCEL_REPORT_AVAILABLE = False
-WORD_REPORT_AVAILABLE = False
-EXCEL_IMPORT_ERROR = "Not attempted"
-WORD_IMPORT_ERROR = "Not attempted"
-
-try:
-    from excel_report_generator import generate_professional_excel_report, generate_filename
-    EXCEL_REPORT_AVAILABLE = True
-    EXCEL_IMPORT_ERROR = None
-except Exception as e:
-    EXCEL_IMPORT_ERROR = str(e)
-    EXCEL_REPORT_AVAILABLE = False
-
-try:
-    from docx import Document
-    from word_report_generator import generate_professional_word_report
-    WORD_REPORT_AVAILABLE = True
-    WORD_IMPORT_ERROR = None
-except Exception as e:
-    WORD_IMPORT_ERROR = str(e)
-    WORD_REPORT_AVAILABLE = False
-
 # =============================================================================
 # ENHANCED DATABASE AUTHENTICATION SYSTEM
 # =============================================================================
@@ -668,40 +651,6 @@ class DatabaseAuthManager:
             
         except Exception as e:
             return False, f"Database error: {str(e)}"
-
-# Add this after successful login, before your main interface
-st.write("=== REPORT GENERATOR DEBUG ===")
-st.write(f"EXCEL_REPORT_AVAILABLE: {EXCEL_REPORT_AVAILABLE}")
-st.write(f"WORD_REPORT_AVAILABLE: {WORD_REPORT_AVAILABLE}")
-
-if 'EXCEL_IMPORT_ERROR' in globals():
-    st.write(f"Excel Import Error: {EXCEL_IMPORT_ERROR}")
-else:
-    st.write("EXCEL_IMPORT_ERROR variable not found")
-
-if 'WORD_IMPORT_ERROR' in globals():
-    st.write(f"Word Import Error: {WORD_IMPORT_ERROR}")
-else:
-    st.write("WORD_IMPORT_ERROR variable not found")
-
-# Test imports directly
-try:
-    import excel_report_generator
-    st.success("excel_report_generator module found")
-except ImportError as e:
-    st.error(f"excel_report_generator import failed: {e}")
-
-try:
-    import word_report_generator
-    st.success("word_report_generator module found")
-except ImportError as e:
-    st.error(f"word_report_generator import failed: {e}")
-
-try:
-    import docx
-    st.success("python-docx library found")
-except ImportError as e:
-    st.error(f"python-docx import failed: {e}")
     
 def show_builder_interface():
     """Enhanced builder interface with photo upload and defect completion"""
