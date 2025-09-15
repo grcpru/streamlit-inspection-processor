@@ -659,6 +659,40 @@ class DatabaseAuthManager:
         except Exception as e:
             return False, f"Database error: {str(e)}"
 
+# Add this after successful login, before your main interface
+st.write("=== REPORT GENERATOR DEBUG ===")
+st.write(f"EXCEL_REPORT_AVAILABLE: {EXCEL_REPORT_AVAILABLE}")
+st.write(f"WORD_REPORT_AVAILABLE: {WORD_REPORT_AVAILABLE}")
+
+if 'EXCEL_IMPORT_ERROR' in globals():
+    st.write(f"Excel Import Error: {EXCEL_IMPORT_ERROR}")
+else:
+    st.write("EXCEL_IMPORT_ERROR variable not found")
+
+if 'WORD_IMPORT_ERROR' in globals():
+    st.write(f"Word Import Error: {WORD_IMPORT_ERROR}")
+else:
+    st.write("WORD_IMPORT_ERROR variable not found")
+
+# Test imports directly
+try:
+    import excel_report_generator
+    st.success("excel_report_generator module found")
+except ImportError as e:
+    st.error(f"excel_report_generator import failed: {e}")
+
+try:
+    import word_report_generator
+    st.success("word_report_generator module found")
+except ImportError as e:
+    st.error(f"word_report_generator import failed: {e}")
+
+try:
+    import docx
+    st.success("python-docx library found")
+except ImportError as e:
+    st.error(f"python-docx import failed: {e}")
+    
 def show_builder_interface():
     """Enhanced builder interface with photo upload and defect completion"""
     
