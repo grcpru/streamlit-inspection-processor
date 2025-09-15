@@ -40,11 +40,11 @@ except Exception as e:
 # )
 
 # Import data persistence module
-from data_persistence import (
-    DataPersistenceManager, 
-    save_trade_mapping_to_database, 
-    load_trade_mapping_from_database
-)
+# from data_persistence import (
+#     DataPersistenceManager, 
+#     save_trade_mapping_to_database, 
+#     load_trade_mapping_from_database
+# )
    
 def ensure_database_exists():
     """Ensure database exists with all required tables"""
