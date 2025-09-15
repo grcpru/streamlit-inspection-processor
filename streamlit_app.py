@@ -49,24 +49,15 @@ from data_persistence import (
 def ensure_database_exists():
     """Ensure database exists with all required tables"""
     try:
-        # First: Create basic structure and users
-        from database_setup import create_database, create_default_users
-        print("Creating basic database structure...")
-        create_database()
-        create_default_users()
-        
-        # Then: Add inspection-specific enhancements
-        from complete_database_setup import create_complete_database_v2
-        print("Adding inspection enhancements...")
-        create_complete_database_v2()
-        
+        # Database setup disabled for now - enable when modules are available
+        print("Database setup skipped - modules not available")
         return True
     except Exception as e:
         print(f"Database setup failed: {e}")
         return False
 
 # Call once
-ensure_database_exists()
+# ensure_database_exists()
 
 def setup_enhanced_defects_if_needed(cursor):
     """Auto-setup enhanced defects table if empty"""
