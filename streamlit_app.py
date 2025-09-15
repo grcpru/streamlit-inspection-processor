@@ -29,18 +29,26 @@ from data_persistence import (
     load_trade_mapping_from_database
 )
 
-# Add these missing functions to your streamlit_app.py
 def ensure_database_exists():
     """Ensure database exists with all required tables"""
     try:
+        # First: Create basic structure and users
+        from database_setup import create_database, create_default_users
+        print("Creating basic database structure...")
+        create_database()
+        create_default_users()
+        
+        # Then: Add inspection-specific enhancements
         from complete_database_setup import create_complete_database_v2
+        print("Adding inspection enhancements...")
         create_complete_database_v2()
+        
         return True
     except Exception as e:
         print(f"Database setup failed: {e}")
         return False
 
-# Call this when the app starts
+# Call once
 ensure_database_exists()
 
 def setup_enhanced_defects_if_needed(cursor):
