@@ -410,24 +410,28 @@ except ImportError as e:
     PORTFOLIO_ANALYTICS_AVAILABLE = False
     PORTFOLIO_ANALYTICS_ERROR = str(e)
     
-# Try to import the professional report generators
-WORD_REPORT_AVAILABLE = False
+# Report generator imports with better error handling
 EXCEL_REPORT_AVAILABLE = False
-WORD_IMPORT_ERROR = None
-EXCEL_IMPORT_ERROR = None
+WORD_REPORT_AVAILABLE = False
+EXCEL_IMPORT_ERROR = "Not attempted"
+WORD_IMPORT_ERROR = "Not attempted"
 
 try:
     from excel_report_generator import generate_professional_excel_report, generate_filename
     EXCEL_REPORT_AVAILABLE = True
+    EXCEL_IMPORT_ERROR = None
 except Exception as e:
     EXCEL_IMPORT_ERROR = str(e)
+    EXCEL_REPORT_AVAILABLE = False
 
 try:
     from docx import Document
     from word_report_generator import generate_professional_word_report
     WORD_REPORT_AVAILABLE = True
+    WORD_IMPORT_ERROR = None
 except Exception as e:
     WORD_IMPORT_ERROR = str(e)
+    WORD_REPORT_AVAILABLE = False
 
 # =============================================================================
 # ENHANCED DATABASE AUTHENTICATION SYSTEM
