@@ -38,3 +38,12 @@ temp_*.png
 # Reports (optional - remove if you want to track them)
 *.xlsx
 *.docx
+
+# Add to your .gitignore file
+#*.db
+#*.sqlite
+#*.sqlite3
+#inspection_system.db"*.db" 
+"*.sqlite" 
+"*.sqlite3" 
+"inspection_system.db" 
