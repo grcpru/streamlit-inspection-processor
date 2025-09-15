@@ -3960,7 +3960,7 @@ elif user['dashboard_type'] == 'portfolio':
     </div>
     """, unsafe_allow_html=True)
     
-    show_enhanced_property_developer_dashboard()
+    show_enhanced_developer_dashboard()
     st.stop()
 
 elif user['dashboard_type'] == 'builder':
